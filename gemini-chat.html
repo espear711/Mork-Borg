@@ -353,6 +353,97 @@
       text-align: center;
     }
 
+    /* Mid-term memory section */
+    .mtm-section {
+      border-top: 2px solid var(--gray-mid);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .mtm-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mtm-title {
+      font-size: 0.85rem;
+      color: var(--red-accent);
+      font-weight: 600;
+    }
+
+    .mtm-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .mtm-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mtm-row label {
+      font-size: 0.75rem;
+      color: var(--gray-lighter);
+      min-width: 70px;
+    }
+
+    .mtm-row input[type="number"] {
+      width: 60px;
+      padding: 4px 6px;
+      background: var(--gray-darkest);
+      border: 1px solid var(--gray-light);
+      border-radius: 4px;
+      color: var(--gray-bright);
+      font-size: 0.8rem;
+      font-family: monospace;
+    }
+    .mtm-row input[type="number"]:focus { outline: none; border-color: var(--red-accent); }
+
+    .mtm-btn {
+      padding: 5px 10px;
+      background: var(--red-dark);
+      color: var(--white);
+      border: 1px solid var(--red-mid);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.72rem;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .mtm-btn:hover { background: var(--red-mid); }
+    .mtm-btn:disabled { background: var(--gray-light); cursor: not-allowed; }
+
+    .mtm-summary {
+      max-height: 120px;
+      overflow-y: auto;
+      padding: 6px 8px;
+      background: var(--gray-darkest);
+      border: 1px solid var(--gray-mid);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: var(--gray-text);
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+    .mtm-summary:empty::before {
+      content: 'No summary yet. Summaries are generated automatically as messages leave your memory window.';
+      color: var(--gray-light);
+      font-style: italic;
+    }
+    .mtm-summary::-webkit-scrollbar { width: 4px; }
+    .mtm-summary::-webkit-scrollbar-thumb { background: var(--gray-light); border-radius: 2px; }
+
+    .mtm-status {
+      font-size: 0.68rem;
+      color: var(--gray-lighter);
+      text-align: center;
+    }
+
     /* ── Main Panel ── */
     .main {
       flex: 1;
@@ -375,7 +466,8 @@
       margin-bottom: 4px;
     }
 
-    .settings-body input[type="password"] {
+    .settings-body input[type="password"],
+    .settings-body input[type="number"] {
       width: 100%;
       padding: 8px 12px;
       background: var(--gray-darkest);
@@ -385,7 +477,21 @@
       font-size: 0.85rem;
       font-family: monospace;
     }
-    .settings-body input[type="password"]:focus { outline: none; border-color: var(--red-accent); }
+    .settings-body input[type="password"]:focus,
+    .settings-body input[type="number"]:focus { outline: none; border-color: var(--red-accent); }
+
+    .settings-hint {
+      font-size: 0.72rem;
+      color: var(--gray-lighter);
+      margin-top: 2px;
+      line-height: 1.3;
+    }
+
+    .settings-divider {
+      border: none;
+      border-top: 1px solid var(--gray-mid);
+      margin: 4px 0;
+    }
 
     .settings-body button {
       width: 100%;
@@ -579,6 +685,29 @@
       </div>
       <div class="lore-list" id="loreList"></div>
       <div class="lore-scan-info" id="loreScanInfo">0 entries &middot; scanning last 5 messages</div>
+      <div class="mtm-section">
+        <div class="mtm-header">
+          <span class="mtm-title">Mid-term Memory</span>
+          <label class="toggle">
+            <input type="checkbox" id="mtmToggle" checked onchange="mtmToggleEnabled(this.checked)">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="mtm-controls">
+          <div class="mtm-row">
+            <label>Interval</label>
+            <input type="number" id="mtmInterval" min="3" max="50" value="10" onchange="mtmSaveSettings()">
+            <span style="font-size:0.72rem;color:var(--gray-lighter);">msgs</span>
+            <button class="mtm-btn" onclick="mtmAutoOptimize()" title="Set interval to ~25% of memory window">Auto</button>
+          </div>
+          <div class="mtm-row">
+            <button class="mtm-btn" onclick="mtmSummarizeNow()" id="mtmSummarizeBtn">Summarize Now</button>
+            <button class="mtm-btn" onclick="mtmClearSummary()" style="background:#3a1a1a;color:var(--red-light);border-color:#4a1a1a;">Clear</button>
+          </div>
+        </div>
+        <div class="mtm-summary" id="mtmSummaryDisplay"></div>
+        <div class="mtm-status" id="mtmStatus">Next summary: not scheduled</div>
+      </div>
     </div>
     <!-- Code Panel -->
     <div class="panel-content" id="panelCode">
@@ -595,6 +724,13 @@
         </div>
         <button onclick="saveApiKey()">Save Key</button>
         <span class="api-status disconnected" id="apiStatus">No key</span>
+        <hr class="settings-divider">
+        <div>
+          <div class="settings-label">Overall Memory (messages)</div>
+          <input type="number" id="memoryDepthInput" min="4" max="500" value="40" placeholder="40"
+            onchange="saveMemoryDepth()">
+          <div class="settings-hint">How many messages the AI can see. Lower = cheaper. The full chat is still saved, but only the last N messages are sent to the API.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -638,6 +774,7 @@
   let chats = loadJSON('chats', {});        // { id: { title, messages: [{role,text}] } }
   let activeChatId = loadJSON('activeChat', null);
   let apiKey = localStorage.getItem(storageKey('apiKey')) || '';
+  let memoryDepth = loadJSON('memoryDepth', 40);
 
   const MODEL = 'gemini-3.1-flash-lite-preview';
 
@@ -674,6 +811,7 @@
     document.getElementById('apiKeyInput').value = apiKey;
     setApiStatus(true);
   }
+  document.getElementById('memoryDepthInput').value = memoryDepth;
   renderChatList();
   renderMessages();
 
@@ -697,6 +835,14 @@
     }
   }
 
+  function saveMemoryDepth() {
+    const val = parseInt(document.getElementById('memoryDepthInput').value);
+    memoryDepth = Math.max(4, Math.min(500, val || 40));
+    document.getElementById('memoryDepthInput').value = memoryDepth;
+    saveJSON('memoryDepth', memoryDepth);
+    mtmUpdateStatus();
+  }
+
   // ─── Chat Management ───
   function newChat() {
     const id = 'chat_' + Date.now();
@@ -713,6 +859,8 @@
     saveJSON('activeChat', activeChatId);
     renderChatList();
     renderMessages();
+    mtmRenderSummary();
+    mtmUpdateStatus();
   }
 
   function deleteChat(id, ev) {
@@ -829,23 +977,38 @@
     sendBtn.disabled = false;
     renderMessages();
     document.getElementById('userInput').focus();
+
+    // Check if mid-term memory needs to summarize (runs in background)
+    mtmCheckAndSummarize();
+    mtmRenderSummary();
   }
 
   // ─── Gemini API Call ───
   async function callGemini(messages) {
+    // Apply memory window — only send last N messages
+    const windowedMsgs = messages.slice(-memoryDepth);
+
     // Build the contents array for the Gemini API
-    const contents = messages
+    const contents = windowedMsgs
       .filter(m => m.role === 'user' || m.role === 'assistant')
       .map(m => ({
         role: m.role === 'user' ? 'user' : 'model',
         parts: [{ text: m.text }]
       }));
 
-    // Gather lorebook context and inject ephemerally (not saved to history)
+    // Gather lorebook context and mid-term memory, inject ephemerally
     const loreContext = gatherLoreContext(messages);
-    const body = { contents };
+    const mtmSummary = getMtmSummaryForChat();
+    const systemParts = [];
+    if (mtmSummary) {
+      systemParts.push('[Mid-term Memory — summary of earlier events that have left the immediate conversation window. Use this to maintain continuity but do not mention receiving it.]\n' + mtmSummary);
+    }
     if (loreContext) {
-      body.systemInstruction = { parts: [{ text: loreContext }] };
+      systemParts.push(loreContext);
+    }
+    const body = { contents };
+    if (systemParts.length > 0) {
+      body.systemInstruction = { parts: [{ text: systemParts.join('\n\n') }] };
     }
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
@@ -1064,6 +1227,184 @@
 
   function escapeAttr(str) {
     return str.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ─── Mid-term Memory ───
+  // Per-chat summaries stored in: mtmData = { chatId: { summary, lastSummarizedIndex } }
+  let mtmData = loadJSON('mtmData', {});
+  let mtmEnabled = loadJSON('mtmEnabled', true);
+  let mtmInterval = loadJSON('mtmInterval', 10);
+  let mtmSummarizing = false;
+
+  document.getElementById('mtmToggle').checked = mtmEnabled;
+  document.getElementById('mtmInterval').value = mtmInterval;
+  mtmRenderSummary();
+  mtmUpdateStatus();
+
+  function mtmPersist() {
+    saveJSON('mtmData', mtmData);
+    saveJSON('mtmEnabled', mtmEnabled);
+    saveJSON('mtmInterval', mtmInterval);
+  }
+
+  function mtmToggleEnabled(val) {
+    mtmEnabled = val;
+    mtmPersist();
+    mtmUpdateStatus();
+  }
+
+  function mtmSaveSettings() {
+    mtmInterval = Math.max(3, parseInt(document.getElementById('mtmInterval').value) || 10);
+    document.getElementById('mtmInterval').value = mtmInterval;
+    mtmPersist();
+    mtmUpdateStatus();
+  }
+
+  function mtmAutoOptimize() {
+    // Set interval to ~25% of memory window, clamped 5-50
+    mtmInterval = Math.max(5, Math.min(50, Math.round(memoryDepth * 0.25)));
+    document.getElementById('mtmInterval').value = mtmInterval;
+    mtmPersist();
+    mtmUpdateStatus();
+  }
+
+  function getMtmSummaryForChat() {
+    if (!mtmEnabled || !activeChatId) return '';
+    const data = mtmData[activeChatId];
+    return data ? data.summary || '' : '';
+  }
+
+  function mtmRenderSummary() {
+    const el = document.getElementById('mtmSummaryDisplay');
+    const summary = getMtmSummaryForChat();
+    el.textContent = summary;
+  }
+
+  function mtmUpdateStatus() {
+    const el = document.getElementById('mtmStatus');
+    if (!mtmEnabled) {
+      el.textContent = 'Mid-term memory disabled';
+      return;
+    }
+    if (!activeChatId || !chats[activeChatId]) {
+      el.textContent = 'No active chat';
+      return;
+    }
+    const chat = chats[activeChatId];
+    const totalMsgs = chat.messages.filter(m => m.role === 'user' || m.role === 'assistant').length;
+    const data = mtmData[activeChatId] || { lastSummarizedIndex: 0 };
+    const msgsSinceLastSummary = totalMsgs - data.lastSummarizedIndex;
+    const msgsUntilNext = Math.max(0, mtmInterval - msgsSinceLastSummary);
+
+    if (totalMsgs <= memoryDepth) {
+      el.textContent = `All ${totalMsgs} messages fit in memory (window: ${memoryDepth})`;
+    } else {
+      el.textContent = `${totalMsgs - memoryDepth} msgs outside window | next summary in ${msgsUntilNext} msgs`;
+    }
+  }
+
+  function mtmClearSummary() {
+    if (!activeChatId) return;
+    delete mtmData[activeChatId];
+    mtmPersist();
+    mtmRenderSummary();
+    mtmUpdateStatus();
+  }
+
+  // Check if we should auto-summarize after a message is sent
+  async function mtmCheckAndSummarize() {
+    if (!mtmEnabled || !activeChatId || !apiKey) return;
+    const chat = chats[activeChatId];
+    const totalMsgs = chat.messages.filter(m => m.role === 'user' || m.role === 'assistant').length;
+
+    // Only summarize if we have messages outside the window
+    if (totalMsgs <= memoryDepth) { mtmUpdateStatus(); return; }
+
+    const data = mtmData[activeChatId] || { summary: '', lastSummarizedIndex: 0 };
+    const msgsSinceLast = totalMsgs - data.lastSummarizedIndex;
+
+    if (msgsSinceLast >= mtmInterval) {
+      await mtmRunSummarization();
+    }
+    mtmUpdateStatus();
+  }
+
+  async function mtmSummarizeNow() {
+    if (!activeChatId || !apiKey) {
+      alert('Need an active chat and API key.');
+      return;
+    }
+    await mtmRunSummarization();
+  }
+
+  async function mtmRunSummarization() {
+    if (mtmSummarizing) return;
+    mtmSummarizing = true;
+    const btn = document.getElementById('mtmSummarizeBtn');
+    btn.disabled = true;
+    btn.textContent = 'Summarizing...';
+
+    try {
+      const chat = chats[activeChatId];
+      const allMsgs = chat.messages.filter(m => m.role === 'user' || m.role === 'assistant');
+      const data = mtmData[activeChatId] || { summary: '', lastSummarizedIndex: 0 };
+
+      // Messages leaving memory: from lastSummarizedIndex to (total - memoryDepth)
+      // But also include some overlap for context
+      const exitStart = data.lastSummarizedIndex;
+      const exitEnd = Math.max(exitStart + 1, allMsgs.length - memoryDepth + Math.round(mtmInterval * 0.5));
+      const msgsToSummarize = allMsgs.slice(exitStart, exitEnd);
+
+      if (msgsToSummarize.length === 0) {
+        btn.disabled = false;
+        btn.textContent = 'Summarize Now';
+        mtmSummarizing = false;
+        return;
+      }
+
+      // Build the summarization prompt
+      const transcript = msgsToSummarize.map(m =>
+        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`
+      ).join('\n\n');
+
+      const previousSummary = data.summary
+        ? `Here is your previous summary of earlier events:\n---\n${data.summary}\n---\n\n`
+        : '';
+
+      const prompt = `${previousSummary}Below is a transcript of recent conversation messages that are about to leave the AI's immediate memory window. Summarize the key events, decisions, character details, plot points, and any important information. Combine this with any previous summary to create one cohesive summary. Be concise but thorough — this summary is the only record of these events.\n\nTranscript:\n---\n${transcript}\n---\n\nProvide an updated combined summary:`;
+
+      const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents })
+      });
+
+      if (!res.ok) throw new Error('API error ' + res.status);
+
+      const result = await res.json();
+      const candidate = result.candidates && result.candidates[0];
+      if (!candidate || !candidate.content || !candidate.content.parts) {
+        throw new Error('No summary returned');
+      }
+
+      const summaryText = candidate.content.parts.map(p => p.text).join('');
+
+      mtmData[activeChatId] = {
+        summary: summaryText,
+        lastSummarizedIndex: exitEnd
+      };
+      mtmPersist();
+      mtmRenderSummary();
+      mtmUpdateStatus();
+    } catch (err) {
+      console.error('Mid-term memory summarization failed:', err);
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Summarize Now';
+    mtmSummarizing = false;
   }
 
   // ─── Helpers ───
