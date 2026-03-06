@@ -639,6 +639,96 @@
     }
     .send-btn:hover { background: var(--red-accent); }
     .send-btn:disabled { background: var(--gray-light); cursor: not-allowed; }
+
+    /* ── Code Panel ── */
+    .code-section { margin-bottom: 18px; }
+    .code-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 0; border-bottom: 1px solid var(--gray-mid); margin-bottom: 8px;
+    }
+    .code-section-header h3 { font-size: 0.88rem; color: var(--gray-bright); }
+    .code-section-header button {
+      background: var(--gray-mid); border: 1px solid var(--gray-light); color: var(--gray-text);
+      padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;
+    }
+    .code-section-header button:hover { background: var(--gray-light); }
+
+    /* Random Tables */
+    .table-entry {
+      background: var(--gray-dark); border: 1px solid var(--gray-mid); border-radius: 6px;
+      margin-bottom: 8px; overflow: hidden;
+    }
+    .table-entry-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 10px; cursor: pointer; gap: 8px;
+    }
+    .table-entry-header:hover { background: var(--gray-mid); }
+    .table-entry-name { font-size: 0.82rem; color: var(--gray-bright); flex: 1; }
+    .table-entry-cmd { font-size: 0.72rem; color: var(--red-accent); font-family: monospace; }
+    .table-editor { display: none; padding: 10px; border-top: 1px solid var(--gray-mid); }
+    .table-entry.editing .table-editor { display: block; }
+    .table-editor label { display: block; font-size: 0.72rem; color: var(--gray-lighter); margin: 6px 0 3px; }
+    .table-editor input[type="text"], .table-editor textarea {
+      width: 100%; background: var(--gray-darkest); border: 1px solid var(--gray-mid);
+      color: var(--gray-bright); padding: 6px 8px; border-radius: 4px; font-size: 0.82rem;
+      font-family: inherit;
+    }
+    .table-editor textarea { min-height: 80px; resize: vertical; font-family: monospace; font-size: 0.78rem; }
+    .table-editor-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
+    .table-editor-actions button {
+      padding: 4px 12px; border-radius: 4px; border: 1px solid var(--gray-light);
+      cursor: pointer; font-size: 0.75rem;
+    }
+    .tbl-btn-delete { background: #3a1a1a; color: var(--red-light); border-color: #4a1a1a !important; }
+    .tbl-btn-save { background: var(--red-dark); color: var(--white); }
+
+    /* Pipeline */
+    .pipeline-flow { display: flex; flex-direction: column; align-items: center; gap: 0; }
+    .pipeline-node {
+      background: var(--gray-dark); border: 1px solid var(--gray-mid); border-radius: 6px;
+      width: 100%; padding: 10px; position: relative;
+    }
+    .pipeline-node.fixed {
+      background: var(--gray-mid); border-color: var(--gray-light);
+      text-align: center; padding: 8px; font-size: 0.8rem; color: var(--gray-text);
+    }
+    .pipeline-arrow {
+      display: flex; align-items: center; justify-content: center;
+      color: var(--gray-lighter); font-size: 1.2rem; padding: 2px 0;
+    }
+    .pipeline-add-btn {
+      background: transparent; border: 1px dashed var(--gray-light); color: var(--gray-lighter);
+      padding: 4px 14px; border-radius: 4px; cursor: pointer; font-size: 0.72rem; margin: 2px 0;
+    }
+    .pipeline-add-btn:hover { border-color: var(--red-accent); color: var(--red-accent); }
+    .pipeline-pass-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
+    }
+    .pipeline-pass-title {
+      font-size: 0.8rem; font-weight: bold; color: var(--red-accent);
+    }
+    .pipeline-pass-remove {
+      background: transparent; border: none; color: var(--gray-lighter); cursor: pointer;
+      font-size: 1rem; padding: 0 4px;
+    }
+    .pipeline-pass-remove:hover { color: var(--red-light); }
+    .pipeline-node textarea {
+      width: 100%; background: var(--gray-darkest); border: 1px solid var(--gray-mid);
+      color: var(--gray-bright); padding: 6px 8px; border-radius: 4px; font-size: 0.78rem;
+      font-family: inherit; min-height: 50px; resize: vertical; margin-top: 4px;
+    }
+    .pipeline-toggles {
+      display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap;
+    }
+    .pipeline-toggle-item {
+      display: flex; align-items: center; gap: 4px; font-size: 0.72rem; color: var(--gray-text);
+    }
+    .pipeline-toggle-item input[type="checkbox"] {
+      accent-color: var(--red-accent);
+    }
+    .pipeline-hint {
+      font-size: 0.7rem; color: var(--gray-lighter); margin-top: 8px; line-height: 1.3;
+    }
   </style>
 </head>
 <body>
@@ -712,7 +802,29 @@
     <!-- Code Panel -->
     <div class="panel-content" id="panelCode">
       <div class="sidebar-header"><h2>Code</h2></div>
-      <div class="panel-placeholder">Coming soon...</div>
+
+      <!-- Random Tables Section -->
+      <div class="code-section">
+        <div class="code-section-header">
+          <h3>Random Tables</h3>
+          <button onclick="tableNewEntry()">+ New Table</button>
+        </div>
+        <div id="tableList"></div>
+        <div class="pipeline-hint">
+          Define tables with a !Command trigger. When !Command appears in any message (user or AI), a random result is rolled and appended after the command.
+        </div>
+      </div>
+
+      <!-- Pipeline Section -->
+      <div class="code-section">
+        <div class="code-section-header">
+          <h3>AI Pipeline</h3>
+        </div>
+        <div class="pipeline-flow" id="pipelineFlow"></div>
+        <div class="pipeline-hint" style="margin-top:10px;">
+          Add passes between user input and final output. Each pass sends the user message + all prior pass results to the AI with its own instructions. Use toggles to control what context each pass sees. !Commands are processed after each pass.
+        </div>
+      </div>
     </div>
     <!-- Settings Panel -->
     <div class="panel-content" id="panelSettings">
@@ -932,8 +1044,8 @@
   // ─── Send Message ───
   async function sendMessage() {
     const input = document.getElementById('userInput');
-    const text = input.value.trim();
-    if (!text) return;
+    let userText = input.value.trim();
+    if (!userText) return;
 
     if (!apiKey) {
       alert('Please enter and save your Gemini API key first.');
@@ -947,11 +1059,14 @@
 
     const chat = chats[activeChatId];
 
+    // Process !Commands in user message
+    userText = processCommands(userText);
+
     // Add user message
-    chat.messages.push({ role: 'user', text });
+    chat.messages.push({ role: 'user', text: userText });
     // Auto-title from first message
     if (chat.messages.length === 1) {
-      chat.title = text.length > 40 ? text.substring(0, 40) + '...' : text;
+      chat.title = userText.length > 40 ? userText.substring(0, 40) + '...' : userText;
     }
     persist();
     renderChatList();
@@ -967,7 +1082,38 @@
     sendBtn.disabled = true;
 
     try {
-      const replyText = await callGemini(chat.messages);
+      const passes = pipeline.passes;
+      const passResults = []; // accumulate results from each pass
+
+      // Run intermediate passes
+      for (let i = 0; i < passes.length; i++) {
+        const pass = passes[i];
+        const extraSystem = buildPassSystemPrompt(pass.instructions, passResults, i);
+        let result = await callGemini(chat.messages, {
+          useLorebook: pass.useLorebook,
+          useMtm: pass.useMtm,
+          useChatHistory: pass.useChatHistory,
+          extraSystem
+        });
+        // Process !Commands in the AI's output
+        result = processCommands(result);
+        passResults.push({ passIndex: i + 1, text: result });
+      }
+
+      // Final pass
+      const finalExtra = buildPassSystemPrompt(
+        pipeline.finalInstructions || '',
+        passResults,
+        passes.length
+      );
+      let replyText = await callGemini(chat.messages, {
+        useLorebook: pipeline.finalUseLore !== false,
+        useMtm: pipeline.finalUseMtm !== false,
+        useChatHistory: pipeline.finalUseHistory !== false,
+        extraSystem: finalExtra
+      });
+      // Process !Commands in the final output
+      replyText = processCommands(replyText);
       chat.messages.push({ role: 'assistant', text: replyText });
     } catch (err) {
       chat.messages.push({ role: 'error', text: 'Error: ' + err.message });
@@ -984,29 +1130,61 @@
     mtmRenderSummary();
   }
 
+  /** Build a system-level instruction block for a pipeline pass */
+  function buildPassSystemPrompt(instructions, priorResults, passIndex) {
+    const parts = [];
+    if (instructions) {
+      parts.push('[Pipeline Pass Instructions]\n' + instructions);
+    }
+    if (priorResults.length > 0) {
+      const resultBlock = priorResults.map(r =>
+        `--- Pass ${r.passIndex} Result ---\n${r.text}`
+      ).join('\n\n');
+      parts.push('[Results from prior pipeline passes — use these to inform your response]\n' + resultBlock);
+    }
+    return parts.join('\n\n');
+  }
+
   // ─── Gemini API Call ───
-  async function callGemini(messages) {
-    // Apply memory window — only send last N messages
-    const windowedMsgs = messages.slice(-memoryDepth);
+  async function callGemini(messages, opts = {}) {
+    const { useLorebook = true, useMtm = true, useChatHistory = true, extraSystem = '' } = opts;
 
-    // Build the contents array for the Gemini API
-    const contents = windowedMsgs
-      .filter(m => m.role === 'user' || m.role === 'assistant')
-      .map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.text }]
-      }));
+    // Build the contents array
+    let contents;
+    if (useChatHistory) {
+      const windowedMsgs = messages.slice(-memoryDepth);
+      contents = windowedMsgs
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .map(m => ({
+          role: m.role === 'user' ? 'user' : 'model',
+          parts: [{ text: m.text }]
+        }));
+    } else {
+      // No chat history — only send the latest user message
+      const lastUser = [...messages].reverse().find(m => m.role === 'user');
+      contents = lastUser
+        ? [{ role: 'user', parts: [{ text: lastUser.text }] }]
+        : [{ role: 'user', parts: [{ text: '' }] }];
+    }
 
-    // Gather lorebook context and mid-term memory, inject ephemerally
-    const loreContext = gatherLoreContext(messages);
-    const mtmSummary = getMtmSummaryForChat();
+    // Gather context based on toggles
     const systemParts = [];
-    if (mtmSummary) {
-      systemParts.push('[Mid-term Memory — summary of earlier events that have left the immediate conversation window. Use this to maintain continuity but do not mention receiving it.]\n' + mtmSummary);
+    if (useMtm) {
+      const mtmSummary = getMtmSummaryForChat();
+      if (mtmSummary) {
+        systemParts.push('[Mid-term Memory — summary of earlier events that have left the immediate conversation window. Use this to maintain continuity but do not mention receiving it.]\n' + mtmSummary);
+      }
     }
-    if (loreContext) {
-      systemParts.push(loreContext);
+    if (useLorebook) {
+      const loreContext = gatherLoreContext(messages);
+      if (loreContext) {
+        systemParts.push(loreContext);
+      }
     }
+    if (extraSystem) {
+      systemParts.push(extraSystem);
+    }
+
     const body = { contents };
     if (systemParts.length > 0) {
       body.systemInstruction = { parts: [{ text: systemParts.join('\n\n') }] };
@@ -1409,6 +1587,215 @@
     btn.textContent = 'Summarize Now';
     mtmSummarizing = false;
   }
+
+  // ─── Random Tables ───
+  let randomTables = loadJSON('randomTables', []);
+  // Each: { id, name, command, rows: 'one per line', enabled }
+  let editingTableId = null;
+
+  function tablePersist() { saveJSON('randomTables', randomTables); }
+
+  function tableNewEntry() {
+    const entry = {
+      id: 'tbl_' + Date.now(),
+      name: 'New Table',
+      command: '!Command',
+      rows: 'Row 1\nRow 2\nRow 3',
+      enabled: true
+    };
+    randomTables.unshift(entry);
+    editingTableId = entry.id;
+    tablePersist();
+    renderTables();
+  }
+
+  function tableDeleteEntry(id) {
+    if (!confirm('Delete this random table? This cannot be undone.')) return;
+    randomTables = randomTables.filter(t => t.id !== id);
+    if (editingTableId === id) editingTableId = null;
+    tablePersist();
+    renderTables();
+  }
+
+  function tableToggleEditing(id) {
+    editingTableId = editingTableId === id ? null : id;
+    renderTables();
+  }
+
+  function tableSaveEntry(id) {
+    const t = randomTables.find(t => t.id === id);
+    if (!t) return;
+    const container = document.querySelector(`.table-entry[data-id="${id}"]`);
+    t.name = container.querySelector('.tbl-ed-name').value.trim() || 'Unnamed';
+    let cmd = container.querySelector('.tbl-ed-cmd').value.trim();
+    if (!cmd.startsWith('!')) cmd = '!' + cmd;
+    t.command = cmd;
+    t.rows = container.querySelector('.tbl-ed-rows').value;
+    tablePersist();
+    renderTables();
+  }
+
+  function tableRoll(tableEntry) {
+    const lines = (tableEntry.rows || '').split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) return '[empty table]';
+    return lines[Math.floor(Math.random() * lines.length)];
+  }
+
+  /** Scan text for !Commands after a pass completes. Returns modified text. */
+  function processCommands(text) {
+    if (randomTables.length === 0) return text;
+    let result = text;
+    for (const tbl of randomTables) {
+      if (!tbl.enabled || !tbl.command) continue;
+      // Case-insensitive match of the command word
+      const cmd = tbl.command;
+      const regex = new RegExp(cmd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      let match;
+      // Process from end to start to preserve indices
+      const matches = [];
+      while ((match = regex.exec(result)) !== null) {
+        matches.push({ index: match.index, length: match[0].length });
+      }
+      for (let i = matches.length - 1; i >= 0; i--) {
+        const m = matches[i];
+        const rolled = tableRoll(tbl);
+        const after = m.index + m.length;
+        result = result.slice(0, after) + ' [' + rolled + ']' + result.slice(after);
+      }
+    }
+    return result;
+  }
+
+  function renderTables() {
+    const list = document.getElementById('tableList');
+    list.innerHTML = '';
+    for (const tbl of randomTables) {
+      const isEditing = editingTableId === tbl.id;
+      const div = document.createElement('div');
+      div.className = 'table-entry' + (isEditing ? ' editing' : '');
+      div.setAttribute('data-id', tbl.id);
+      const rowCount = (tbl.rows || '').split('\n').filter(l => l.trim()).length;
+      div.innerHTML = `
+        <div class="table-entry-header" onclick="tableToggleEditing('${tbl.id}')">
+          <span class="table-entry-name">${escapeHtml(tbl.name)}</span>
+          <span class="table-entry-cmd">${escapeHtml(tbl.command)}</span>
+          <span style="font-size:0.7rem;color:var(--gray-lighter);">${rowCount} rows</span>
+        </div>
+        <div class="table-editor">
+          <label>Table Name</label>
+          <input class="tbl-ed-name" type="text" value="${escapeAttr(tbl.name)}" placeholder="Monster Table">
+          <label>Command Trigger <span style="font-weight:normal;color:var(--gray-lighter)">(e.g. !Monster)</span></label>
+          <input class="tbl-ed-cmd" type="text" value="${escapeAttr(tbl.command)}" placeholder="!Monster">
+          <label>Rows <span style="font-weight:normal;color:var(--gray-lighter)">(one per line, random pick)</span></label>
+          <textarea class="tbl-ed-rows" placeholder="Goblin\nSkeleton\nDragon">${escapeHtml(tbl.rows)}</textarea>
+          <div class="table-editor-actions">
+            <button class="tbl-btn-delete" onclick="tableDeleteEntry('${tbl.id}')">Delete</button>
+            <button class="tbl-btn-save" onclick="tableSaveEntry('${tbl.id}')">Save</button>
+          </div>
+        </div>
+      `;
+      list.appendChild(div);
+    }
+  }
+  renderTables();
+
+  // ─── AI Pipeline ───
+  let pipeline = loadJSON('pipeline', { passes: [], finalInstructions: '', finalUseLore: true, finalUseMtm: true, finalUseHistory: true });
+
+  function pipelinePersist() { saveJSON('pipeline', pipeline); }
+
+  function pipelineAddPass(index) {
+    const pass = {
+      id: 'pass_' + Date.now(),
+      name: 'Pass ' + (pipeline.passes.length + 1),
+      instructions: '',
+      useLorebook: true,
+      useMtm: true,
+      useChatHistory: true
+    };
+    pipeline.passes.splice(index, 0, pass);
+    pipelinePersist();
+    renderPipeline();
+  }
+
+  function pipelineRemovePass(id) {
+    if (!confirm('Remove this pipeline pass?')) return;
+    pipeline.passes = pipeline.passes.filter(p => p.id !== id);
+    pipelinePersist();
+    renderPipeline();
+  }
+
+  function pipelineSave() {
+    // Read all pass data from DOM
+    for (const pass of pipeline.passes) {
+      const node = document.querySelector(`.pipeline-node[data-id="${pass.id}"]`);
+      if (!node) continue;
+      pass.instructions = node.querySelector('.pipe-instructions').value;
+      pass.useLorebook = node.querySelector('.pipe-lore').checked;
+      pass.useMtm = node.querySelector('.pipe-mtm').checked;
+      pass.useChatHistory = node.querySelector('.pipe-history').checked;
+    }
+    // Final output node
+    const finalNode = document.querySelector('.pipeline-node[data-id="final"]');
+    if (finalNode) {
+      pipeline.finalInstructions = finalNode.querySelector('.pipe-instructions').value;
+      pipeline.finalUseLore = finalNode.querySelector('.pipe-lore').checked;
+      pipeline.finalUseMtm = finalNode.querySelector('.pipe-mtm').checked;
+      pipeline.finalUseHistory = finalNode.querySelector('.pipe-history').checked;
+    }
+    pipelinePersist();
+  }
+
+  function renderPipeline() {
+    const flow = document.getElementById('pipelineFlow');
+    flow.innerHTML = '';
+
+    // User Input node (fixed)
+    flow.innerHTML += `<div class="pipeline-node fixed">User's Input</div>`;
+    flow.innerHTML += `<div class="pipeline-arrow">&darr;</div>`;
+
+    // Add-pass button before first pass
+    flow.innerHTML += `<button class="pipeline-add-btn" onclick="pipelineAddPass(0)">+ Add Pass</button>`;
+    flow.innerHTML += `<div class="pipeline-arrow">&darr;</div>`;
+
+    // Intermediate passes
+    for (let i = 0; i < pipeline.passes.length; i++) {
+      const pass = pipeline.passes[i];
+      flow.innerHTML += `
+        <div class="pipeline-node" data-id="${pass.id}">
+          <div class="pipeline-pass-header">
+            <span class="pipeline-pass-title">Pass ${i + 1}</span>
+            <button class="pipeline-pass-remove" onclick="pipelineRemovePass('${pass.id}')" title="Remove pass">&times;</button>
+          </div>
+          <textarea class="pipe-instructions" placeholder="Instructions for this pass..." onchange="pipelineSave()">${escapeHtml(pass.instructions)}</textarea>
+          <div class="pipeline-toggles">
+            <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-lore" ${pass.useLorebook ? 'checked' : ''} onchange="pipelineSave()"> Lorebook</label>
+            <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-mtm" ${pass.useMtm ? 'checked' : ''} onchange="pipelineSave()"> Mid-term Memory</label>
+            <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-history" ${pass.useChatHistory ? 'checked' : ''} onchange="pipelineSave()"> Chat History</label>
+          </div>
+        </div>
+      `;
+      flow.innerHTML += `<div class="pipeline-arrow">&darr;</div>`;
+      flow.innerHTML += `<button class="pipeline-add-btn" onclick="pipelineAddPass(${i + 1})">+ Add Pass</button>`;
+      flow.innerHTML += `<div class="pipeline-arrow">&darr;</div>`;
+    }
+
+    // Final Output node
+    flow.innerHTML += `
+      <div class="pipeline-node" data-id="final" style="border-color:var(--red-dark);">
+        <div class="pipeline-pass-header">
+          <span class="pipeline-pass-title">Final Output</span>
+        </div>
+        <textarea class="pipe-instructions" placeholder="Instructions for the final response (optional)..." onchange="pipelineSave()">${escapeHtml(pipeline.finalInstructions || '')}</textarea>
+        <div class="pipeline-toggles">
+          <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-lore" ${pipeline.finalUseLore !== false ? 'checked' : ''} onchange="pipelineSave()"> Lorebook</label>
+          <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-mtm" ${pipeline.finalUseMtm !== false ? 'checked' : ''} onchange="pipelineSave()"> Mid-term Memory</label>
+          <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-history" ${pipeline.finalUseHistory !== false ? 'checked' : ''} onchange="pipelineSave()"> Chat History</label>
+        </div>
+      </div>
+    `;
+  }
+  renderPipeline();
 
   // ─── Helpers ───
   function handleKey(ev) {
