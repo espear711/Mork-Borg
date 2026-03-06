@@ -31,17 +31,69 @@
       overflow: hidden;
     }
 
-    /* ── Sidebar ── */
-    .sidebar {
-      width: 280px;
-      min-width: 280px;
+    /* ── Tab Bar (icon strip) ── */
+    .tab-bar {
+      width: 48px;
+      min-width: 48px;
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 12px;
+      gap: 8px;
+      height: 100vh;
+      z-index: 10;
+    }
+
+    .tab-btn {
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 8px;
+      background: var(--gray-mid);
+      color: var(--gray-lighter);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s;
+    }
+    .tab-btn:hover { background: var(--gray-light); color: var(--gray-bright); }
+    .tab-btn.active { background: var(--red-mid); color: var(--white); }
+
+    .tab-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    /* ── Side Panel (slides out) ── */
+    .side-panel {
+      width: 0;
+      overflow: hidden;
       background: var(--gray-dark);
       border-right: 2px solid var(--red-dark);
       display: flex;
       flex-direction: column;
       height: 100vh;
+      transition: width 0.25s ease;
+    }
+    .side-panel.open {
+      width: 280px;
+      min-width: 280px;
     }
 
+    .panel-content {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      min-width: 280px;
+    }
+    .panel-content.active {
+      display: flex;
+    }
+
+    /* ── Chat panel ── */
     .sidebar-header {
       padding: 20px 16px 12px;
       border-bottom: 1px solid var(--gray-mid);
@@ -112,6 +164,286 @@
     .chat-item:hover .chat-item-delete { opacity: 1; }
     .chat-item-delete:hover { color: var(--red-light); }
 
+    /* ── Placeholder (code panel etc.) ── */
+    .panel-placeholder {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gray-lighter);
+      font-size: 0.95rem;
+      padding: 20px;
+      text-align: center;
+    }
+
+    /* ── Lorebook panel ── */
+    .lore-toolbar {
+      display: flex;
+      gap: 6px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--gray-mid);
+    }
+
+    .lore-toolbar button {
+      flex: 1;
+      padding: 7px 0;
+      background: var(--red-dark);
+      color: var(--white);
+      border: 1px solid var(--red-mid);
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .lore-toolbar button:hover { background: var(--red-mid); }
+
+    .lore-global-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--gray-mid);
+      font-size: 0.8rem;
+      color: var(--gray-text);
+    }
+
+    .lore-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px;
+    }
+    .lore-list::-webkit-scrollbar { width: 6px; }
+    .lore-list::-webkit-scrollbar-thumb { background: var(--gray-light); border-radius: 3px; }
+
+    .lore-entry {
+      background: var(--gray-darkest);
+      border: 1px solid var(--gray-mid);
+      border-radius: 6px;
+      margin-bottom: 6px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .lore-entry.disabled { opacity: 0.5; }
+    .lore-entry.editing { border-color: var(--red-accent); }
+
+    .lore-entry-header {
+      display: flex;
+      align-items: center;
+      padding: 8px 10px;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .lore-entry-header:hover { background: var(--gray-mid); }
+
+    .lore-entry-name {
+      flex: 1;
+      font-size: 0.85rem;
+      color: var(--gray-bright);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .lore-entry-keys {
+      font-size: 0.7rem;
+      color: var(--gray-lighter);
+      max-width: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 32px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle .slider {
+      position: absolute;
+      inset: 0;
+      background: var(--gray-light);
+      border-radius: 9px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle .slider::before {
+      content: '';
+      position: absolute;
+      height: 14px; width: 14px;
+      left: 2px; bottom: 2px;
+      background: var(--white);
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle input:checked + .slider { background: var(--red-accent); }
+    .toggle input:checked + .slider::before { transform: translateX(14px); }
+
+    /* Entry editor (inline expand) */
+    .lore-editor {
+      display: none;
+      padding: 10px;
+      border-top: 1px solid var(--gray-mid);
+      flex-direction: column;
+      gap: 8px;
+    }
+    .lore-entry.editing .lore-editor { display: flex; }
+
+    .lore-editor label {
+      font-size: 0.75rem;
+      color: var(--gray-lighter);
+      margin-bottom: 2px;
+    }
+
+    .lore-editor input,
+    .lore-editor textarea {
+      width: 100%;
+      padding: 7px 10px;
+      background: var(--gray-dark);
+      border: 1px solid var(--gray-light);
+      border-radius: 5px;
+      color: var(--gray-bright);
+      font-size: 0.82rem;
+      font-family: inherit;
+    }
+    .lore-editor input:focus,
+    .lore-editor textarea:focus { outline: none; border-color: var(--red-accent); }
+
+    .lore-editor textarea {
+      resize: vertical;
+      min-height: 70px;
+      max-height: 200px;
+      line-height: 1.4;
+    }
+
+    .lore-editor-row {
+      display: flex;
+      gap: 6px;
+    }
+    .lore-editor-row > div { flex: 1; display: flex; flex-direction: column; }
+
+    .lore-editor-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+
+    .lore-editor-actions button {
+      padding: 5px 12px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .lore-btn-save { background: var(--red-dark); color: var(--white); }
+    .lore-btn-save:hover { background: var(--red-mid); }
+    .lore-btn-delete { background: #3a1a1a; color: var(--red-light); }
+    .lore-btn-delete:hover { background: #4a1a1a; }
+
+    .lore-scan-info {
+      font-size: 0.7rem;
+      color: var(--gray-lighter);
+      padding: 6px 12px;
+      border-top: 1px solid var(--gray-mid);
+      text-align: center;
+    }
+
+    /* Mid-term memory section */
+    .mtm-section {
+      border-top: 2px solid var(--gray-mid);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .mtm-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mtm-title {
+      font-size: 0.85rem;
+      color: var(--red-accent);
+      font-weight: 600;
+    }
+
+    .mtm-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .mtm-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mtm-row label {
+      font-size: 0.75rem;
+      color: var(--gray-lighter);
+      min-width: 70px;
+    }
+
+    .mtm-row input[type="number"] {
+      width: 60px;
+      padding: 4px 6px;
+      background: var(--gray-darkest);
+      border: 1px solid var(--gray-light);
+      border-radius: 4px;
+      color: var(--gray-bright);
+      font-size: 0.8rem;
+      font-family: monospace;
+    }
+    .mtm-row input[type="number"]:focus { outline: none; border-color: var(--red-accent); }
+
+    .mtm-btn {
+      padding: 5px 10px;
+      background: var(--red-dark);
+      color: var(--white);
+      border: 1px solid var(--red-mid);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.72rem;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .mtm-btn:hover { background: var(--red-mid); }
+    .mtm-btn:disabled { background: var(--gray-light); cursor: not-allowed; }
+
+    .mtm-summary {
+      max-height: 120px;
+      overflow-y: auto;
+      padding: 6px 8px;
+      background: var(--gray-darkest);
+      border: 1px solid var(--gray-mid);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: var(--gray-text);
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+    .mtm-summary:empty::before {
+      content: 'No summary yet. Summaries are generated automatically as messages leave your memory window.';
+      color: var(--gray-light);
+      font-style: italic;
+    }
+    .mtm-summary::-webkit-scrollbar { width: 4px; }
+    .mtm-summary::-webkit-scrollbar-thumb { background: var(--gray-light); border-radius: 2px; }
+
+    .mtm-status {
+      font-size: 0.68rem;
+      color: var(--gray-lighter);
+      text-align: center;
+    }
+
     /* ── Main Panel ── */
     .main {
       flex: 1;
@@ -120,24 +452,23 @@
       height: 100vh;
     }
 
-    /* ── API Key Bar ── */
-    .api-bar {
-      padding: 12px 20px;
-      background: var(--gray-dark);
-      border-bottom: 1px solid var(--gray-mid);
+    /* ── Settings panel ── */
+    .settings-body {
+      padding: 16px;
       display: flex;
-      align-items: center;
-      gap: 10px;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    .api-bar label {
-      font-size: 0.85rem;
+    .settings-label {
+      font-size: 0.8rem;
       color: var(--gray-lighter);
-      white-space: nowrap;
+      margin-bottom: 4px;
     }
 
-    .api-bar input {
-      flex: 1;
+    .settings-body input[type="password"],
+    .settings-body input[type="number"] {
+      width: 100%;
       padding: 8px 12px;
       background: var(--gray-darkest);
       border: 1px solid var(--gray-light);
@@ -146,10 +477,25 @@
       font-size: 0.85rem;
       font-family: monospace;
     }
-    .api-bar input:focus { outline: none; border-color: var(--red-accent); }
+    .settings-body input[type="password"]:focus,
+    .settings-body input[type="number"]:focus { outline: none; border-color: var(--red-accent); }
 
-    .api-bar button {
-      padding: 8px 16px;
+    .settings-hint {
+      font-size: 0.72rem;
+      color: var(--gray-lighter);
+      margin-top: 2px;
+      line-height: 1.3;
+    }
+
+    .settings-divider {
+      border: none;
+      border-top: 1px solid var(--gray-mid);
+      margin: 4px 0;
+    }
+
+    .settings-body button {
+      width: 100%;
+      padding: 9px;
       background: var(--red-dark);
       color: var(--white);
       border: 1px solid var(--red-mid);
@@ -159,13 +505,13 @@
       font-weight: 600;
       transition: background 0.2s;
     }
-    .api-bar button:hover { background: var(--red-mid); }
+    .settings-body button:hover { background: var(--red-mid); }
 
     .api-status {
       font-size: 0.75rem;
       padding: 4px 10px;
       border-radius: 10px;
-      white-space: nowrap;
+      text-align: center;
     }
     .api-status.connected { background: #1a3a1a; color: #4caf50; }
     .api-status.disconnected { background: #3a1a1a; color: var(--red-light); }
@@ -293,35 +639,222 @@
     }
     .send-btn:hover { background: var(--red-accent); }
     .send-btn:disabled { background: var(--gray-light); cursor: not-allowed; }
+
+    /* ── Code Panel ── */
+    .code-section { margin-bottom: 18px; }
+    .code-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 0; border-bottom: 1px solid var(--gray-mid); margin-bottom: 8px;
+    }
+    .code-section-header h3 { font-size: 0.88rem; color: var(--gray-bright); }
+    .code-section-header button {
+      background: var(--gray-mid); border: 1px solid var(--gray-light); color: var(--gray-text);
+      padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;
+    }
+    .code-section-header button:hover { background: var(--gray-light); }
+
+    /* Random Tables */
+    .table-entry {
+      background: var(--gray-dark); border: 1px solid var(--gray-mid); border-radius: 6px;
+      margin-bottom: 8px; overflow: hidden;
+    }
+    .table-entry-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 10px; cursor: pointer; gap: 8px;
+    }
+    .table-entry-header:hover { background: var(--gray-mid); }
+    .table-entry-name { font-size: 0.82rem; color: var(--gray-bright); flex: 1; }
+    .table-entry-cmd { font-size: 0.72rem; color: var(--red-accent); font-family: monospace; }
+    .table-editor { display: none; padding: 10px; border-top: 1px solid var(--gray-mid); }
+    .table-entry.editing .table-editor { display: block; }
+    .table-editor label { display: block; font-size: 0.72rem; color: var(--gray-lighter); margin: 6px 0 3px; }
+    .table-editor input[type="text"], .table-editor textarea {
+      width: 100%; background: var(--gray-darkest); border: 1px solid var(--gray-mid);
+      color: var(--gray-bright); padding: 6px 8px; border-radius: 4px; font-size: 0.82rem;
+      font-family: inherit;
+    }
+    .table-editor textarea { min-height: 80px; resize: vertical; font-family: monospace; font-size: 0.78rem; }
+    .table-editor-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
+    .table-editor-actions button {
+      padding: 4px 12px; border-radius: 4px; border: 1px solid var(--gray-light);
+      cursor: pointer; font-size: 0.75rem;
+    }
+    .tbl-btn-delete { background: #3a1a1a; color: var(--red-light); border-color: #4a1a1a !important; }
+    .tbl-btn-save { background: var(--red-dark); color: var(--white); }
+
+    /* Pipeline */
+    .pipeline-flow { display: flex; flex-direction: column; align-items: center; gap: 0; }
+    .pipeline-node {
+      background: var(--gray-dark); border: 1px solid var(--gray-mid); border-radius: 6px;
+      width: 100%; padding: 10px; position: relative;
+    }
+    .pipeline-node.fixed {
+      background: var(--gray-mid); border-color: var(--gray-light);
+      text-align: center; padding: 8px; font-size: 0.8rem; color: var(--gray-text);
+    }
+    .pipeline-arrow {
+      display: flex; align-items: center; justify-content: center;
+      color: var(--gray-lighter); font-size: 1.2rem; padding: 2px 0;
+    }
+    .pipeline-add-btn {
+      background: transparent; border: 1px dashed var(--gray-light); color: var(--gray-lighter);
+      padding: 4px 14px; border-radius: 4px; cursor: pointer; font-size: 0.72rem; margin: 2px 0;
+    }
+    .pipeline-add-btn:hover { border-color: var(--red-accent); color: var(--red-accent); }
+    .pipeline-pass-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
+    }
+    .pipeline-pass-title {
+      font-size: 0.8rem; font-weight: bold; color: var(--red-accent);
+    }
+    .pipeline-pass-remove {
+      background: transparent; border: none; color: var(--gray-lighter); cursor: pointer;
+      font-size: 1rem; padding: 0 4px;
+    }
+    .pipeline-pass-remove:hover { color: var(--red-light); }
+    .pipeline-node textarea {
+      width: 100%; background: var(--gray-darkest); border: 1px solid var(--gray-mid);
+      color: var(--gray-bright); padding: 6px 8px; border-radius: 4px; font-size: 0.78rem;
+      font-family: inherit; min-height: 50px; resize: vertical; margin-top: 4px;
+    }
+    .pipeline-toggles {
+      display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap;
+    }
+    .pipeline-toggle-item {
+      display: flex; align-items: center; gap: 4px; font-size: 0.72rem; color: var(--gray-text);
+    }
+    .pipeline-toggle-item input[type="checkbox"] {
+      accent-color: var(--red-accent);
+    }
+    .pipeline-hint {
+      font-size: 0.7rem; color: var(--gray-lighter); margin-top: 8px; line-height: 1.3;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <h2>Gemini Chat</h2>
-      <button class="new-chat-btn" onclick="newChat()">+ New Chat</button>
+  <!-- Tab Bar (icon strip) -->
+  <div class="tab-bar">
+    <button class="tab-btn" id="tabChat" onclick="togglePanel('chat')" title="Chats">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z"/></svg>
+    </button>
+    <button class="tab-btn" id="tabLore" onclick="togglePanel('lore')" title="Lore">
+      <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+    </button>
+    <button class="tab-btn" id="tabCode" onclick="togglePanel('code')" title="Code">
+      <svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+    </button>
+    <button class="tab-btn" id="tabSettings" onclick="togglePanel('settings')" title="Settings">
+      <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
+    </button>
+  </div>
+
+  <!-- Side Panel (slides out) -->
+  <div class="side-panel" id="sidePanel">
+    <!-- Chat Panel -->
+    <div class="panel-content" id="panelChat">
+      <div class="sidebar-header">
+        <h2>Chats</h2>
+        <button class="new-chat-btn" onclick="newChat()">+ New Chat</button>
+      </div>
+      <div class="chat-list" id="chatList"></div>
     </div>
-    <div class="chat-list" id="chatList"></div>
+    <!-- Lore Panel -->
+    <div class="panel-content" id="panelLore">
+      <div class="sidebar-header"><h2>Lorebook</h2></div>
+      <div class="lore-toolbar">
+        <button onclick="loreNewEntry()">+ New Entry</button>
+        <button onclick="loreImportExport()">Import / Export</button>
+      </div>
+      <div class="lore-global-toggle">
+        <span>Lorebook Active</span>
+        <label class="toggle">
+          <input type="checkbox" id="loreGlobalToggle" checked onchange="loreToggleGlobal(this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="lore-list" id="loreList"></div>
+      <div class="lore-scan-info" id="loreScanInfo">0 entries &middot; scanning last 5 messages</div>
+      <div class="mtm-section">
+        <div class="mtm-header">
+          <span class="mtm-title">Mid-term Memory</span>
+          <label class="toggle">
+            <input type="checkbox" id="mtmToggle" checked onchange="mtmToggleEnabled(this.checked)">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="mtm-controls">
+          <div class="mtm-row">
+            <label>Interval</label>
+            <input type="number" id="mtmInterval" min="3" max="50" value="10" onchange="mtmSaveSettings()">
+            <span style="font-size:0.72rem;color:var(--gray-lighter);">msgs</span>
+            <button class="mtm-btn" onclick="mtmAutoOptimize()" title="Set interval to ~25% of memory window">Auto</button>
+          </div>
+          <div class="mtm-row">
+            <button class="mtm-btn" onclick="mtmSummarizeNow()" id="mtmSummarizeBtn">Summarize Now</button>
+            <button class="mtm-btn" onclick="mtmClearSummary()" style="background:#3a1a1a;color:var(--red-light);border-color:#4a1a1a;">Clear</button>
+          </div>
+        </div>
+        <div class="mtm-summary" id="mtmSummaryDisplay"></div>
+        <div class="mtm-status" id="mtmStatus">Next summary: not scheduled</div>
+      </div>
+    </div>
+    <!-- Code Panel -->
+    <div class="panel-content" id="panelCode">
+      <div class="sidebar-header"><h2>Code</h2></div>
+
+      <!-- Random Tables Section -->
+      <div class="code-section">
+        <div class="code-section-header">
+          <h3>Random Tables</h3>
+          <button onclick="tableNewEntry()">+ New Table</button>
+        </div>
+        <div id="tableList"></div>
+        <div class="pipeline-hint">
+          Define tables with a !Command trigger. When !Command appears in any message (user or AI), a random result is rolled and appended after the command.
+        </div>
+      </div>
+
+      <!-- Pipeline Section -->
+      <div class="code-section">
+        <div class="code-section-header">
+          <h3>AI Pipeline</h3>
+        </div>
+        <div class="pipeline-flow" id="pipelineFlow"></div>
+        <div class="pipeline-hint" style="margin-top:10px;">
+          Add passes between user input and final output. Each pass sends the user message + all prior pass results to the AI with its own instructions. Use toggles to control what context each pass sees. !Commands are processed after each pass.
+        </div>
+      </div>
+    </div>
+    <!-- Settings Panel -->
+    <div class="panel-content" id="panelSettings">
+      <div class="sidebar-header"><h2>Settings</h2></div>
+      <div class="settings-body">
+        <div>
+          <div class="settings-label">Gemini API Key</div>
+          <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key">
+        </div>
+        <button onclick="saveApiKey()">Save Key</button>
+        <span class="api-status disconnected" id="apiStatus">No key</span>
+        <hr class="settings-divider">
+        <div>
+          <div class="settings-label">Overall Memory (messages)</div>
+          <input type="number" id="memoryDepthInput" min="4" max="500" value="40" placeholder="40"
+            onchange="saveMemoryDepth()">
+          <div class="settings-hint">How many messages the AI can see. Lower = cheaper. The full chat is still saved, but only the last N messages are sent to the API.</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Main -->
   <div class="main">
 
-    <!-- API Key Bar -->
-    <div class="api-bar">
-      <label for="apiKeyInput">API Key:</label>
-      <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key">
-      <button onclick="saveApiKey()">Save Key</button>
-      <span class="api-status disconnected" id="apiStatus">No key</span>
-    </div>
-
     <!-- Messages -->
     <div class="messages" id="messages">
       <div class="welcome" id="welcome">
         <h1>Gemini Chat</h1>
-        <p>Enter your Gemini API key above, then start a conversation with Gemini Flash Lite.</p>
+        <p>Open Settings (gear icon) to enter your Gemini API key, then start a conversation.</p>
       </div>
     </div>
 
@@ -353,14 +886,44 @@
   let chats = loadJSON('chats', {});        // { id: { title, messages: [{role,text}] } }
   let activeChatId = loadJSON('activeChat', null);
   let apiKey = localStorage.getItem(storageKey('apiKey')) || '';
+  let memoryDepth = loadJSON('memoryDepth', 40);
 
-  const MODEL = 'gemini-3.1-flash-lite';
+  const MODEL = 'gemini-3.1-flash-lite-preview';
+
+  // ─── Side Panel Toggle ───
+  let activePanel = null;
+
+  function togglePanel(name) {
+    const panel = document.getElementById('sidePanel');
+    const panels = { chat: 'panelChat', lore: 'panelLore', code: 'panelCode', settings: 'panelSettings' };
+    const tabs = { chat: 'tabChat', lore: 'tabLore', code: 'tabCode', settings: 'tabSettings' };
+
+    // Clicking the already-active tab collapses the panel
+    if (activePanel === name) {
+      panel.classList.remove('open');
+      document.getElementById(tabs[name]).classList.remove('active');
+      document.querySelectorAll('.panel-content').forEach(p => p.classList.remove('active'));
+      activePanel = null;
+      return;
+    }
+
+    // Deactivate all tabs & panels
+    Object.values(tabs).forEach(id => document.getElementById(id).classList.remove('active'));
+    document.querySelectorAll('.panel-content').forEach(p => p.classList.remove('active'));
+
+    // Activate the selected tab & panel
+    document.getElementById(tabs[name]).classList.add('active');
+    document.getElementById(panels[name]).classList.add('active');
+    panel.classList.add('open');
+    activePanel = name;
+  }
 
   // ─── Init ───
   if (apiKey) {
     document.getElementById('apiKeyInput').value = apiKey;
     setApiStatus(true);
   }
+  document.getElementById('memoryDepthInput').value = memoryDepth;
   renderChatList();
   renderMessages();
 
@@ -384,6 +947,14 @@
     }
   }
 
+  function saveMemoryDepth() {
+    const val = parseInt(document.getElementById('memoryDepthInput').value);
+    memoryDepth = Math.max(4, Math.min(500, val || 40));
+    document.getElementById('memoryDepthInput').value = memoryDepth;
+    saveJSON('memoryDepth', memoryDepth);
+    mtmUpdateStatus();
+  }
+
   // ─── Chat Management ───
   function newChat() {
     const id = 'chat_' + Date.now();
@@ -400,10 +971,13 @@
     saveJSON('activeChat', activeChatId);
     renderChatList();
     renderMessages();
+    mtmRenderSummary();
+    mtmUpdateStatus();
   }
 
   function deleteChat(id, ev) {
     ev.stopPropagation();
+    if (!confirm('Delete this chat? This cannot be undone.')) return;
     delete chats[id];
     if (activeChatId === id) activeChatId = Object.keys(chats)[0] || null;
     persist();
@@ -442,7 +1016,7 @@
       container.innerHTML = `
         <div class="welcome">
           <h1>Gemini Chat</h1>
-          <p>Enter your Gemini API key above, then start a conversation with Gemini Flash Lite.</p>
+          <p>Open Settings (gear icon) to enter your Gemini API key, then start a conversation.</p>
         </div>`;
       return;
     }
@@ -470,8 +1044,8 @@
   // ─── Send Message ───
   async function sendMessage() {
     const input = document.getElementById('userInput');
-    const text = input.value.trim();
-    if (!text) return;
+    let userText = input.value.trim();
+    if (!userText) return;
 
     if (!apiKey) {
       alert('Please enter and save your Gemini API key first.');
@@ -485,11 +1059,14 @@
 
     const chat = chats[activeChatId];
 
+    // Process !Commands in user message
+    userText = processCommands(userText);
+
     // Add user message
-    chat.messages.push({ role: 'user', text });
+    chat.messages.push({ role: 'user', text: userText });
     // Auto-title from first message
     if (chat.messages.length === 1) {
-      chat.title = text.length > 40 ? text.substring(0, 40) + '...' : text;
+      chat.title = userText.length > 40 ? userText.substring(0, 40) + '...' : userText;
     }
     persist();
     renderChatList();
@@ -505,7 +1082,38 @@
     sendBtn.disabled = true;
 
     try {
-      const replyText = await callGemini(chat.messages);
+      const passes = pipeline.passes;
+      const passResults = []; // accumulate results from each pass
+
+      // Run intermediate passes
+      for (let i = 0; i < passes.length; i++) {
+        const pass = passes[i];
+        const extraSystem = buildPassSystemPrompt(pass.instructions, passResults, i);
+        let result = await callGemini(chat.messages, {
+          useLorebook: pass.useLorebook,
+          useMtm: pass.useMtm,
+          useChatHistory: pass.useChatHistory,
+          extraSystem
+        });
+        // Process !Commands in the AI's output
+        result = processCommands(result);
+        passResults.push({ passIndex: i + 1, text: result });
+      }
+
+      // Final pass
+      const finalExtra = buildPassSystemPrompt(
+        pipeline.finalInstructions || '',
+        passResults,
+        passes.length
+      );
+      let replyText = await callGemini(chat.messages, {
+        useLorebook: pipeline.finalUseLore !== false,
+        useMtm: pipeline.finalUseMtm !== false,
+        useChatHistory: pipeline.finalUseHistory !== false,
+        extraSystem: finalExtra
+      });
+      // Process !Commands in the final output
+      replyText = processCommands(replyText);
       chat.messages.push({ role: 'assistant', text: replyText });
     } catch (err) {
       chat.messages.push({ role: 'error', text: 'Error: ' + err.message });
@@ -516,24 +1124,78 @@
     sendBtn.disabled = false;
     renderMessages();
     document.getElementById('userInput').focus();
+
+    // Check if mid-term memory needs to summarize (runs in background)
+    mtmCheckAndSummarize();
+    mtmRenderSummary();
+  }
+
+  /** Build a system-level instruction block for a pipeline pass */
+  function buildPassSystemPrompt(instructions, priorResults, passIndex) {
+    const parts = [];
+    if (instructions) {
+      parts.push('[Pipeline Pass Instructions]\n' + instructions);
+    }
+    if (priorResults.length > 0) {
+      const resultBlock = priorResults.map(r =>
+        `--- Pass ${r.passIndex} Result ---\n${r.text}`
+      ).join('\n\n');
+      parts.push('[Results from prior pipeline passes — use these to inform your response]\n' + resultBlock);
+    }
+    return parts.join('\n\n');
   }
 
   // ─── Gemini API Call ───
-  async function callGemini(messages) {
-    // Build the contents array for the Gemini API
-    const contents = messages
-      .filter(m => m.role === 'user' || m.role === 'assistant')
-      .map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.text }]
-      }));
+  async function callGemini(messages, opts = {}) {
+    const { useLorebook = true, useMtm = true, useChatHistory = true, extraSystem = '' } = opts;
+
+    // Build the contents array
+    let contents;
+    if (useChatHistory) {
+      const windowedMsgs = messages.slice(-memoryDepth);
+      contents = windowedMsgs
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .map(m => ({
+          role: m.role === 'user' ? 'user' : 'model',
+          parts: [{ text: m.text }]
+        }));
+    } else {
+      // No chat history — only send the latest user message
+      const lastUser = [...messages].reverse().find(m => m.role === 'user');
+      contents = lastUser
+        ? [{ role: 'user', parts: [{ text: lastUser.text }] }]
+        : [{ role: 'user', parts: [{ text: '' }] }];
+    }
+
+    // Gather context based on toggles
+    const systemParts = [];
+    if (useMtm) {
+      const mtmSummary = getMtmSummaryForChat();
+      if (mtmSummary) {
+        systemParts.push('[Mid-term Memory — summary of earlier events that have left the immediate conversation window. Use this to maintain continuity but do not mention receiving it.]\n' + mtmSummary);
+      }
+    }
+    if (useLorebook) {
+      const loreContext = gatherLoreContext(messages);
+      if (loreContext) {
+        systemParts.push(loreContext);
+      }
+    }
+    if (extraSystem) {
+      systemParts.push(extraSystem);
+    }
+
+    const body = { contents };
+    if (systemParts.length > 0) {
+      body.systemInstruction = { parts: [{ text: systemParts.join('\n\n') }] };
+    }
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
 
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents })
+      body: JSON.stringify(body)
     });
 
     if (!res.ok) {
@@ -551,6 +1213,589 @@
 
     return candidate.content.parts.map(p => p.text).join('');
   }
+
+  // ─── Lorebook ───
+  let lorebook = loadJSON('lorebook', []);
+  // Each entry: { id, name, keys: 'comma,sep', content, enabled, constant, scanDepth, priority }
+  let loreGlobalEnabled = loadJSON('loreEnabled', true);
+  let editingLoreId = null;
+
+  document.getElementById('loreGlobalToggle').checked = loreGlobalEnabled;
+  renderLorebook();
+
+  function lorePersist() {
+    saveJSON('lorebook', lorebook);
+    saveJSON('loreEnabled', loreGlobalEnabled);
+  }
+
+  function loreToggleGlobal(val) {
+    loreGlobalEnabled = val;
+    lorePersist();
+  }
+
+  function loreNewEntry() {
+    const entry = {
+      id: 'lore_' + Date.now(),
+      name: 'New Entry',
+      keys: '',
+      content: '',
+      enabled: true,
+      constant: false,
+      scanDepth: 5,
+      priority: 0
+    };
+    lorebook.unshift(entry);
+    editingLoreId = entry.id;
+    lorePersist();
+    renderLorebook();
+  }
+
+  function loreDeleteEntry(id) {
+    if (!confirm('Delete this lorebook entry? This cannot be undone.')) return;
+    lorebook = lorebook.filter(e => e.id !== id);
+    if (editingLoreId === id) editingLoreId = null;
+    lorePersist();
+    renderLorebook();
+  }
+
+  function loreToggleEntry(id, val) {
+    const e = lorebook.find(e => e.id === id);
+    if (e) { e.enabled = val; lorePersist(); renderLorebook(); }
+  }
+
+  function loreToggleEditing(id) {
+    editingLoreId = editingLoreId === id ? null : id;
+    renderLorebook();
+  }
+
+  function loreSaveEntry(id) {
+    const e = lorebook.find(e => e.id === id);
+    if (!e) return;
+    const container = document.querySelector(`.lore-entry[data-id="${id}"]`);
+    e.name = container.querySelector('.lore-ed-name').value.trim() || 'Unnamed';
+    e.keys = container.querySelector('.lore-ed-keys').value.trim();
+    e.content = container.querySelector('.lore-ed-content').value;
+    e.constant = container.querySelector('.lore-ed-constant').checked;
+    e.scanDepth = parseInt(container.querySelector('.lore-ed-depth').value) || 5;
+    e.priority = parseInt(container.querySelector('.lore-ed-priority').value) || 0;
+    lorePersist();
+    renderLorebook();
+  }
+
+  function renderLorebook() {
+    const list = document.getElementById('loreList');
+    list.innerHTML = '';
+
+    for (const entry of lorebook) {
+      const isEditing = editingLoreId === entry.id;
+      const div = document.createElement('div');
+      div.className = 'lore-entry' + (!entry.enabled ? ' disabled' : '') + (isEditing ? ' editing' : '');
+      div.setAttribute('data-id', entry.id);
+
+      div.innerHTML = `
+        <div class="lore-entry-header" onclick="loreToggleEditing('${entry.id}')">
+          <span class="lore-entry-name">${escapeHtml(entry.name)}</span>
+          <span class="lore-entry-keys">${escapeHtml(entry.keys || 'no keys')}</span>
+          ${entry.constant ? '<span style="font-size:0.65rem;color:var(--red-accent);" title="Always active">&#9733;</span>' : ''}
+          <label class="toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" ${entry.enabled ? 'checked' : ''} onchange="loreToggleEntry('${entry.id}', this.checked)">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="lore-editor">
+          <label>Name</label>
+          <input class="lore-ed-name" type="text" value="${escapeAttr(entry.name)}" placeholder="Entry name">
+          <label>Keys <span style="font-weight:normal;color:var(--gray-lighter)">(comma separated trigger words)</span></label>
+          <input class="lore-ed-keys" type="text" value="${escapeAttr(entry.keys)}" placeholder="dwarf, Groblin, axe">
+          <label>Content <span style="font-weight:normal;color:var(--gray-lighter)">(injected when triggered)</span></label>
+          <textarea class="lore-ed-content" placeholder="Lore text that gets sent with the message...">${escapeHtml(entry.content)}</textarea>
+          <div class="lore-editor-row">
+            <div>
+              <label>Scan Depth</label>
+              <input class="lore-ed-depth" type="number" min="1" max="50" value="${entry.scanDepth || 5}">
+            </div>
+            <div>
+              <label>Priority</label>
+              <input class="lore-ed-priority" type="number" min="0" max="100" value="${entry.priority || 0}">
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+            <label class="toggle">
+              <input class="lore-ed-constant" type="checkbox" ${entry.constant ? 'checked' : ''}>
+              <span class="slider"></span>
+            </label>
+            <span style="font-size:0.78rem;color:var(--gray-text);">Always Active (ignore keys)</span>
+          </div>
+          <div class="lore-editor-actions">
+            <button class="lore-btn-delete" onclick="loreDeleteEntry('${entry.id}')">Delete</button>
+            <button class="lore-btn-save" onclick="loreSaveEntry('${entry.id}')">Save</button>
+          </div>
+        </div>
+      `;
+      list.appendChild(div);
+    }
+
+    // Update info bar
+    const info = document.getElementById('loreScanInfo');
+    const enabled = lorebook.filter(e => e.enabled).length;
+    info.textContent = `${enabled} active / ${lorebook.length} entries`;
+  }
+
+  // ─── Lorebook Injection (called at send time) ───
+  function gatherLoreContext(messages) {
+    if (!loreGlobalEnabled) return '';
+
+    const enabledEntries = lorebook.filter(e => e.enabled);
+    if (enabledEntries.length === 0) return '';
+
+    const matched = [];
+
+    for (const entry of enabledEntries) {
+      // Constant entries always match
+      if (entry.constant) {
+        matched.push(entry);
+        continue;
+      }
+
+      // Parse keys
+      const keys = (entry.keys || '').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+      if (keys.length === 0) continue;
+
+      // Scan last N messages for keyword matches
+      const depth = entry.scanDepth || 5;
+      const recentMsgs = messages.slice(-depth);
+      const haystack = recentMsgs.map(m => m.text).join(' ').toLowerCase();
+
+      for (const key of keys) {
+        if (haystack.includes(key)) {
+          matched.push(entry);
+          break;
+        }
+      }
+    }
+
+    if (matched.length === 0) return '';
+
+    // Sort by priority descending
+    matched.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+
+    // Build injection block
+    const parts = matched.map(e => `[${e.name}]: ${e.content}`);
+    return '[Lorebook Context — the following entries are relevant background information. Use them to inform your response but do not mention that you received them.]\n' + parts.join('\n\n');
+  }
+
+  // ─── Lorebook Import / Export ───
+  function loreImportExport() {
+    const json = JSON.stringify(lorebook, null, 2);
+    const action = prompt('EXPORT: Copy the JSON below.\\nIMPORT: Paste lorebook JSON and click OK.\\n\\n' + json);
+    if (action && action.trim() !== json.trim()) {
+      try {
+        const imported = JSON.parse(action);
+        if (Array.isArray(imported)) {
+          lorebook = imported;
+          lorePersist();
+          renderLorebook();
+          alert('Imported ' + imported.length + ' entries.');
+        } else {
+          alert('Invalid format: expected an array.');
+        }
+      } catch (e) {
+        alert('Invalid JSON: ' + e.message);
+      }
+    }
+  }
+
+  function escapeAttr(str) {
+    return str.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ─── Mid-term Memory ───
+  // Per-chat summaries stored in: mtmData = { chatId: { summary, lastSummarizedIndex } }
+  let mtmData = loadJSON('mtmData', {});
+  let mtmEnabled = loadJSON('mtmEnabled', true);
+  let mtmInterval = loadJSON('mtmInterval', 10);
+  let mtmSummarizing = false;
+
+  document.getElementById('mtmToggle').checked = mtmEnabled;
+  document.getElementById('mtmInterval').value = mtmInterval;
+  mtmRenderSummary();
+  mtmUpdateStatus();
+
+  function mtmPersist() {
+    saveJSON('mtmData', mtmData);
+    saveJSON('mtmEnabled', mtmEnabled);
+    saveJSON('mtmInterval', mtmInterval);
+  }
+
+  function mtmToggleEnabled(val) {
+    mtmEnabled = val;
+    mtmPersist();
+    mtmUpdateStatus();
+  }
+
+  function mtmSaveSettings() {
+    mtmInterval = Math.max(3, parseInt(document.getElementById('mtmInterval').value) || 10);
+    document.getElementById('mtmInterval').value = mtmInterval;
+    mtmPersist();
+    mtmUpdateStatus();
+  }
+
+  function mtmAutoOptimize() {
+    // Set interval to ~25% of memory window, clamped 5-50
+    mtmInterval = Math.max(5, Math.min(50, Math.round(memoryDepth * 0.25)));
+    document.getElementById('mtmInterval').value = mtmInterval;
+    mtmPersist();
+    mtmUpdateStatus();
+  }
+
+  function getMtmSummaryForChat() {
+    if (!mtmEnabled || !activeChatId) return '';
+    const data = mtmData[activeChatId];
+    return data ? data.summary || '' : '';
+  }
+
+  function mtmRenderSummary() {
+    const el = document.getElementById('mtmSummaryDisplay');
+    const summary = getMtmSummaryForChat();
+    el.textContent = summary;
+  }
+
+  function mtmUpdateStatus() {
+    const el = document.getElementById('mtmStatus');
+    if (!mtmEnabled) {
+      el.textContent = 'Mid-term memory disabled';
+      return;
+    }
+    if (!activeChatId || !chats[activeChatId]) {
+      el.textContent = 'No active chat';
+      return;
+    }
+    const chat = chats[activeChatId];
+    const totalMsgs = chat.messages.filter(m => m.role === 'user' || m.role === 'assistant').length;
+    const data = mtmData[activeChatId] || { lastSummarizedIndex: 0 };
+    const msgsSinceLastSummary = totalMsgs - data.lastSummarizedIndex;
+    const msgsUntilNext = Math.max(0, mtmInterval - msgsSinceLastSummary);
+
+    if (totalMsgs <= memoryDepth) {
+      el.textContent = `All ${totalMsgs} messages fit in memory (window: ${memoryDepth})`;
+    } else {
+      el.textContent = `${totalMsgs - memoryDepth} msgs outside window | next summary in ${msgsUntilNext} msgs`;
+    }
+  }
+
+  function mtmClearSummary() {
+    if (!activeChatId) return;
+    if (!confirm('Clear the mid-term memory summary for this chat?')) return;
+    delete mtmData[activeChatId];
+    mtmPersist();
+    mtmRenderSummary();
+    mtmUpdateStatus();
+  }
+
+  // Check if we should auto-summarize after a message is sent
+  async function mtmCheckAndSummarize() {
+    if (!mtmEnabled || !activeChatId || !apiKey) return;
+    const chat = chats[activeChatId];
+    const totalMsgs = chat.messages.filter(m => m.role === 'user' || m.role === 'assistant').length;
+
+    // Only summarize if we have messages outside the window
+    if (totalMsgs <= memoryDepth) { mtmUpdateStatus(); return; }
+
+    const data = mtmData[activeChatId] || { summary: '', lastSummarizedIndex: 0 };
+    const msgsSinceLast = totalMsgs - data.lastSummarizedIndex;
+
+    if (msgsSinceLast >= mtmInterval) {
+      await mtmRunSummarization();
+    }
+    mtmUpdateStatus();
+  }
+
+  async function mtmSummarizeNow() {
+    if (!activeChatId || !apiKey) {
+      alert('Need an active chat and API key.');
+      return;
+    }
+    await mtmRunSummarization();
+  }
+
+  async function mtmRunSummarization() {
+    if (mtmSummarizing) return;
+    mtmSummarizing = true;
+    const btn = document.getElementById('mtmSummarizeBtn');
+    btn.disabled = true;
+    btn.textContent = 'Summarizing...';
+
+    try {
+      const chat = chats[activeChatId];
+      const allMsgs = chat.messages.filter(m => m.role === 'user' || m.role === 'assistant');
+      const data = mtmData[activeChatId] || { summary: '', lastSummarizedIndex: 0 };
+
+      // Messages leaving memory: from lastSummarizedIndex to (total - memoryDepth)
+      // But also include some overlap for context
+      const exitStart = data.lastSummarizedIndex;
+      const exitEnd = Math.max(exitStart + 1, allMsgs.length - memoryDepth + Math.round(mtmInterval * 0.5));
+      const msgsToSummarize = allMsgs.slice(exitStart, exitEnd);
+
+      if (msgsToSummarize.length === 0) {
+        btn.disabled = false;
+        btn.textContent = 'Summarize Now';
+        mtmSummarizing = false;
+        return;
+      }
+
+      // Build the summarization prompt
+      const transcript = msgsToSummarize.map(m =>
+        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`
+      ).join('\n\n');
+
+      const previousSummary = data.summary
+        ? `Here is your previous summary of earlier events:\n---\n${data.summary}\n---\n\n`
+        : '';
+
+      const prompt = `${previousSummary}Below is a transcript of recent conversation messages that are about to leave the AI's immediate memory window. Summarize the key events, decisions, character details, plot points, and any important information. Combine this with any previous summary to create one cohesive summary. Be concise but thorough — this summary is the only record of these events.\n\nTranscript:\n---\n${transcript}\n---\n\nProvide an updated combined summary:`;
+
+      const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents })
+      });
+
+      if (!res.ok) throw new Error('API error ' + res.status);
+
+      const result = await res.json();
+      const candidate = result.candidates && result.candidates[0];
+      if (!candidate || !candidate.content || !candidate.content.parts) {
+        throw new Error('No summary returned');
+      }
+
+      const summaryText = candidate.content.parts.map(p => p.text).join('');
+
+      mtmData[activeChatId] = {
+        summary: summaryText,
+        lastSummarizedIndex: exitEnd
+      };
+      mtmPersist();
+      mtmRenderSummary();
+      mtmUpdateStatus();
+    } catch (err) {
+      console.error('Mid-term memory summarization failed:', err);
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Summarize Now';
+    mtmSummarizing = false;
+  }
+
+  // ─── Random Tables ───
+  let randomTables = loadJSON('randomTables', []);
+  // Each: { id, name, command, rows: 'one per line', enabled }
+  let editingTableId = null;
+
+  function tablePersist() { saveJSON('randomTables', randomTables); }
+
+  function tableNewEntry() {
+    const entry = {
+      id: 'tbl_' + Date.now(),
+      name: 'New Table',
+      command: '!Command',
+      rows: 'Row 1\nRow 2\nRow 3',
+      enabled: true
+    };
+    randomTables.unshift(entry);
+    editingTableId = entry.id;
+    tablePersist();
+    renderTables();
+  }
+
+  function tableDeleteEntry(id) {
+    if (!confirm('Delete this random table? This cannot be undone.')) return;
+    randomTables = randomTables.filter(t => t.id !== id);
+    if (editingTableId === id) editingTableId = null;
+    tablePersist();
+    renderTables();
+  }
+
+  function tableToggleEditing(id) {
+    editingTableId = editingTableId === id ? null : id;
+    renderTables();
+  }
+
+  function tableSaveEntry(id) {
+    const t = randomTables.find(t => t.id === id);
+    if (!t) return;
+    const container = document.querySelector(`.table-entry[data-id="${id}"]`);
+    t.name = container.querySelector('.tbl-ed-name').value.trim() || 'Unnamed';
+    let cmd = container.querySelector('.tbl-ed-cmd').value.trim();
+    if (!cmd.startsWith('!')) cmd = '!' + cmd;
+    t.command = cmd;
+    t.rows = container.querySelector('.tbl-ed-rows').value;
+    tablePersist();
+    renderTables();
+  }
+
+  function tableRoll(tableEntry) {
+    const lines = (tableEntry.rows || '').split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) return '[empty table]';
+    return lines[Math.floor(Math.random() * lines.length)];
+  }
+
+  /** Scan text for !Commands after a pass completes. Returns modified text. */
+  function processCommands(text) {
+    if (randomTables.length === 0) return text;
+    let result = text;
+    for (const tbl of randomTables) {
+      if (!tbl.enabled || !tbl.command) continue;
+      // Case-insensitive match of the command word
+      const cmd = tbl.command;
+      const regex = new RegExp(cmd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      let match;
+      // Process from end to start to preserve indices
+      const matches = [];
+      while ((match = regex.exec(result)) !== null) {
+        matches.push({ index: match.index, length: match[0].length });
+      }
+      for (let i = matches.length - 1; i >= 0; i--) {
+        const m = matches[i];
+        const rolled = tableRoll(tbl);
+        const after = m.index + m.length;
+        result = result.slice(0, after) + ' [' + rolled + ']' + result.slice(after);
+      }
+    }
+    return result;
+  }
+
+  function renderTables() {
+    const list = document.getElementById('tableList');
+    list.innerHTML = '';
+    for (const tbl of randomTables) {
+      const isEditing = editingTableId === tbl.id;
+      const div = document.createElement('div');
+      div.className = 'table-entry' + (isEditing ? ' editing' : '');
+      div.setAttribute('data-id', tbl.id);
+      const rowCount = (tbl.rows || '').split('\n').filter(l => l.trim()).length;
+      div.innerHTML = `
+        <div class="table-entry-header" onclick="tableToggleEditing('${tbl.id}')">
+          <span class="table-entry-name">${escapeHtml(tbl.name)}</span>
+          <span class="table-entry-cmd">${escapeHtml(tbl.command)}</span>
+          <span style="font-size:0.7rem;color:var(--gray-lighter);">${rowCount} rows</span>
+        </div>
+        <div class="table-editor">
+          <label>Table Name</label>
+          <input class="tbl-ed-name" type="text" value="${escapeAttr(tbl.name)}" placeholder="Monster Table">
+          <label>Command Trigger <span style="font-weight:normal;color:var(--gray-lighter)">(e.g. !Monster)</span></label>
+          <input class="tbl-ed-cmd" type="text" value="${escapeAttr(tbl.command)}" placeholder="!Monster">
+          <label>Rows <span style="font-weight:normal;color:var(--gray-lighter)">(one per line, random pick)</span></label>
+          <textarea class="tbl-ed-rows" placeholder="Goblin\nSkeleton\nDragon">${escapeHtml(tbl.rows)}</textarea>
+          <div class="table-editor-actions">
+            <button class="tbl-btn-delete" onclick="tableDeleteEntry('${tbl.id}')">Delete</button>
+            <button class="tbl-btn-save" onclick="tableSaveEntry('${tbl.id}')">Save</button>
+          </div>
+        </div>
+      `;
+      list.appendChild(div);
+    }
+  }
+  renderTables();
+
+  // ─── AI Pipeline ───
+  let pipeline = loadJSON('pipeline', { passes: [], finalInstructions: '', finalUseLore: true, finalUseMtm: true, finalUseHistory: true });
+
+  function pipelinePersist() { saveJSON('pipeline', pipeline); }
+
+  function pipelineAddPass(index) {
+    const pass = {
+      id: 'pass_' + Date.now(),
+      name: 'Pass ' + (pipeline.passes.length + 1),
+      instructions: '',
+      useLorebook: true,
+      useMtm: true,
+      useChatHistory: true
+    };
+    pipeline.passes.splice(index, 0, pass);
+    pipelinePersist();
+    renderPipeline();
+  }
+
+  function pipelineRemovePass(id) {
+    if (!confirm('Remove this pipeline pass?')) return;
+    pipeline.passes = pipeline.passes.filter(p => p.id !== id);
+    pipelinePersist();
+    renderPipeline();
+  }
+
+  function pipelineSave() {
+    // Read all pass data from DOM
+    for (const pass of pipeline.passes) {
+      const node = document.querySelector(`.pipeline-node[data-id="${pass.id}"]`);
+      if (!node) continue;
+      pass.instructions = node.querySelector('.pipe-instructions').value;
+      pass.useLorebook = node.querySelector('.pipe-lore').checked;
+      pass.useMtm = node.querySelector('.pipe-mtm').checked;
+      pass.useChatHistory = node.querySelector('.pipe-history').checked;
+    }
+    // Final output node
+    const finalNode = document.querySelector('.pipeline-node[data-id="final"]');
+    if (finalNode) {
+      pipeline.finalInstructions = finalNode.querySelector('.pipe-instructions').value;
+      pipeline.finalUseLore = finalNode.querySelector('.pipe-lore').checked;
+      pipeline.finalUseMtm = finalNode.querySelector('.pipe-mtm').checked;
+      pipeline.finalUseHistory = finalNode.querySelector('.pipe-history').checked;
+    }
+    pipelinePersist();
+  }
+
+  function renderPipeline() {
+    const flow = document.getElementById('pipelineFlow');
+    flow.innerHTML = '';
+
+    // User Input node (fixed)
+    flow.innerHTML += `<div class="pipeline-node fixed">User's Input</div>`;
+    flow.innerHTML += `<div class="pipeline-arrow">&darr;</div>`;
+
+    // Add-pass button before first pass
+    flow.innerHTML += `<button class="pipeline-add-btn" onclick="pipelineAddPass(0)">+ Add Pass</button>`;
+    flow.innerHTML += `<div class="pipeline-arrow">&darr;</div>`;
+
+    // Intermediate passes
+    for (let i = 0; i < pipeline.passes.length; i++) {
+      const pass = pipeline.passes[i];
+      flow.innerHTML += `
+        <div class="pipeline-node" data-id="${pass.id}">
+          <div class="pipeline-pass-header">
+            <span class="pipeline-pass-title">Pass ${i + 1}</span>
+            <button class="pipeline-pass-remove" onclick="pipelineRemovePass('${pass.id}')" title="Remove pass">&times;</button>
+          </div>
+          <textarea class="pipe-instructions" placeholder="Instructions for this pass..." onchange="pipelineSave()">${escapeHtml(pass.instructions)}</textarea>
+          <div class="pipeline-toggles">
+            <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-lore" ${pass.useLorebook ? 'checked' : ''} onchange="pipelineSave()"> Lorebook</label>
+            <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-mtm" ${pass.useMtm ? 'checked' : ''} onchange="pipelineSave()"> Mid-term Memory</label>
+            <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-history" ${pass.useChatHistory ? 'checked' : ''} onchange="pipelineSave()"> Chat History</label>
+          </div>
+        </div>
+      `;
+      flow.innerHTML += `<div class="pipeline-arrow">&darr;</div>`;
+      flow.innerHTML += `<button class="pipeline-add-btn" onclick="pipelineAddPass(${i + 1})">+ Add Pass</button>`;
+      flow.innerHTML += `<div class="pipeline-arrow">&darr;</div>`;
+    }
+
+    // Final Output node
+    flow.innerHTML += `
+      <div class="pipeline-node" data-id="final" style="border-color:var(--red-dark);">
+        <div class="pipeline-pass-header">
+          <span class="pipeline-pass-title">Final Output</span>
+        </div>
+        <textarea class="pipe-instructions" placeholder="Instructions for the final response (optional)..." onchange="pipelineSave()">${escapeHtml(pipeline.finalInstructions || '')}</textarea>
+        <div class="pipeline-toggles">
+          <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-lore" ${pipeline.finalUseLore !== false ? 'checked' : ''} onchange="pipelineSave()"> Lorebook</label>
+          <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-mtm" ${pipeline.finalUseMtm !== false ? 'checked' : ''} onchange="pipelineSave()"> Mid-term Memory</label>
+          <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-history" ${pipeline.finalUseHistory !== false ? 'checked' : ''} onchange="pipelineSave()"> Chat History</label>
+        </div>
+      </div>
+    `;
+  }
+  renderPipeline();
 
   // ─── Helpers ───
   function handleKey(ev) {
