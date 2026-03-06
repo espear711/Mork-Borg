@@ -865,6 +865,7 @@
 
   function deleteChat(id, ev) {
     ev.stopPropagation();
+    if (!confirm('Delete this chat? This cannot be undone.')) return;
     delete chats[id];
     if (activeChatId === id) activeChatId = Object.keys(chats)[0] || null;
     persist();
@@ -1072,6 +1073,7 @@
   }
 
   function loreDeleteEntry(id) {
+    if (!confirm('Delete this lorebook entry? This cannot be undone.')) return;
     lorebook = lorebook.filter(e => e.id !== id);
     if (editingLoreId === id) editingLoreId = null;
     lorePersist();
@@ -1305,6 +1307,7 @@
 
   function mtmClearSummary() {
     if (!activeChatId) return;
+    if (!confirm('Clear the mid-term memory summary for this chat?')) return;
     delete mtmData[activeChatId];
     mtmPersist();
     mtmRenderSummary();
