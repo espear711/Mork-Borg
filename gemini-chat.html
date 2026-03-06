@@ -368,6 +368,9 @@
     <button class="tab-btn" id="tabLore" onclick="togglePanel('lore')" title="Lore">
       <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
     </button>
+    <button class="tab-btn" id="tabCode" onclick="togglePanel('code')" title="Code">
+      <svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+    </button>
     <button class="tab-btn" id="tabSettings" onclick="togglePanel('settings')" title="Settings">
       <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
     </button>
@@ -386,6 +389,11 @@
     <!-- Lore Panel -->
     <div class="panel-content" id="panelLore">
       <div class="sidebar-header"><h2>Lore</h2></div>
+      <div class="panel-placeholder">Coming soon...</div>
+    </div>
+    <!-- Code Panel -->
+    <div class="panel-content" id="panelCode">
+      <div class="sidebar-header"><h2>Code</h2></div>
       <div class="panel-placeholder">Coming soon...</div>
     </div>
     <!-- Settings Panel -->
@@ -449,8 +457,8 @@
 
   function togglePanel(name) {
     const panel = document.getElementById('sidePanel');
-    const panels = { chat: 'panelChat', lore: 'panelLore', settings: 'panelSettings' };
-    const tabs = { chat: 'tabChat', lore: 'tabLore', settings: 'tabSettings' };
+    const panels = { chat: 'panelChat', lore: 'panelLore', code: 'panelCode', settings: 'panelSettings' };
+    const tabs = { chat: 'tabChat', lore: 'tabLore', code: 'tabCode', settings: 'tabSettings' };
 
     // Clicking the already-active tab collapses the panel
     if (activePanel === name) {
