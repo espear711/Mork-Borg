@@ -1338,7 +1338,17 @@
   let editingTableId = null;
   let collapsedTableGroups = loadJSON('collapsedTableGroups', {});
   let tableGlobalEnabled = loadJSON('tableGlobalEnabled', true);
-  let systemInstructions = loadJSON('systemInstructions', '');
+  const DEFAULT_SYSTEM_INSTRUCTIONS = `You are a skilled Dungeon Master running a dark, immersive tabletop RPG campaign. Follow these principles:
+
+- Narrate in second person ("You step into the torchlit chamber..."). Be vivid but concise.
+- Track and respect the Current Playstate (HP, inventory, gold, conditions). Never give the player items, gold, or healing they didn't earn. If they take damage or spend resources, reflect it.
+- Present meaningful choices with real consequences. Do not railroad. Let player actions — even reckless ones — play out honestly.
+- NPCs have their own motivations and memories. They react to how the player has treated them in the past.
+- Combat should feel dangerous. Describe attacks, misses, and injuries viscerally. Low HP should feel desperate.
+- When the player attempts something with an uncertain outcome, call for a relevant ability check (e.g. "Roll a Strength check" or "Test your AGI"). Wait for the result before narrating the outcome.
+- Do not break character. Do not explain game mechanics unless asked. Do not summarize what the player already knows.
+- End each response with a clear moment that invites the player to act — a question, a looming threat, a fork in the road.`;
+  let systemInstructions = loadJSON('systemInstructions', DEFAULT_SYSTEM_INSTRUCTIONS);
 
   const MODEL = 'gemini-2.0-flash-lite';
 
@@ -1643,12 +1653,13 @@
     renderMessages();
     document.getElementById('userInput').focus();
 
-    // Check if mid-term memory needs to summarize (runs in background)
-    mtmCheckAndSummarize();
-    mtmRenderSummary();
-    
-    // Check and update playstate (runs in background)
-    updatePlaystate();
+    // Run background tasks sequentially: MTM first (may update lorebook),
+    // then Playstate (uses lorebook + MTM for context).
+    // Using .then() so UI stays responsive — these run after the current frame.
+    mtmCheckAndSummarize().then(() => {
+      mtmRenderSummary();
+      return updatePlaystate();
+    });
   }
 
   // ─── Message Actions ───
@@ -2106,25 +2117,44 @@
 
     const targetChatId = activeChatId;
     const chat = chats[targetChatId];
-    // Grab the last 2 valid messages (one user, one AI typically) to see what just happened
     const validMsgs = chat.messages.filter(m => m.role === 'user' || m.role === 'assistant');
     if (validMsgs.length === 0) return;
-    
-    // Determine how many messages to include. Maybe the last 2 is good enough.
-    const recentMsgs = validMsgs.slice(-2);
+
+    // Use last 6 messages — captures multi-turn combat, negotiations, etc.
+    const recentMsgs = validMsgs.slice(-6);
     const transcript = recentMsgs.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`).join('\n\n');
+
+    // Gather supporting context so the updater knows WHO and WHAT
+    const contextParts = [];
+
+    // MTM summary — so the updater knows prior history
+    const mtmSummary = getMtmSummaryForChat();
+    if (mtmSummary) {
+      contextParts.push('[Story So Far]\n' + mtmSummary);
+    }
+
+    // Lorebook — so the updater knows NPCs, items, locations by name
+    const loreContext = gatherLoreContext(chat.messages);
+    if (loreContext) {
+      contextParts.push(loreContext);
+    }
+
+    const contextBlock = contextParts.length > 0
+      ? '\n\n[World & Character Context — use this to understand references in the conversation]\n' + contextParts.join('\n\n')
+      : '';
 
     playstateUpdating = true;
     document.getElementById('playstateStatus').textContent = 'Updating playstate...';
 
     try {
-      const promptText = `You are managing a dynamic game/play state. Based on the "Recent Conversation" and your "Instructions", read the "Current State" and output the entirely updated state. Do NOT wrap your output in markdown code blocks unless the state is strictly JSON/code. Only output the new raw state text.
+      const promptText = `You are managing a dynamic game/play state. Based on the "Recent Conversation", the "World & Character Context", and your "Instructions", read the "Current State" and output the entirely updated state. Do NOT wrap your output in markdown code blocks unless the state is strictly JSON/code. Only output the new raw state text. If nothing meaningful changed, output the state unchanged.
 
 [Instructions]
 ${data.prompt}
 
 [Current State]
 ${data.state}
+${contextBlock}
 
 [Recent Conversation]
 ${transcript}
@@ -2145,14 +2175,14 @@ Updated State:`;
       if (!candidate || !candidate.content || !candidate.content.parts) throw new Error('No state returned');
 
       let newState = candidate.content.parts.map(p => p.text).join('').trim();
-      
+
       // Strip markdown code block if present
       newState = newState.replace(/^```[a-z]*\n/i, '').replace(/\n```$/, '');
 
       // Save it
       playstateData[targetChatId].state = newState;
       saveJSON('playstateData', playstateData);
-      
+
       if (activeChatId === targetChatId) {
         renderPlaystate();
         document.getElementById('playstateStatus').textContent = 'Last updated just now.';
@@ -2388,6 +2418,14 @@ Updated State:`;
         .replace('{previous_summary}', previousSummary)
         .replace('{transcript}', transcript);
 
+      // Include current playstate so the summarizer knows mechanical state (HP, inventory, etc.)
+      if (playstateEnabled) {
+        const psData = getPlaystateForChat();
+        if (psData && psData.state) {
+          prompt += `\n\n[Current Playstate — for context only, do not repeat verbatim]\n${psData.state}`;
+        }
+      }
+
       if (loreAutoExtractEnabled) {
         const recentContextMsgs = allMsgs.slice(exitEnd);
         if (recentContextMsgs.length > 0) {
@@ -2400,8 +2438,8 @@ Updated State:`;
 
         const mutableLore = lorebook.filter(e => !e.isStatic);
         if (mutableLore.length > 0) {
-          const loreContext = mutableLore.map(e => 
-            `{ "id": "${e.id}", "name": "${e.name}", "keys": "${e.keys}", "content": "${e.content}" }`
+          const loreContext = mutableLore.map(e =>
+            JSON.stringify({ id: e.id, name: e.name, keys: e.keys, content: e.content })
           ).join('\n');
           prompt += `\n\n[Current Mutable Lorebook]\nThe following entries currently exist in the lorebook and are allowed to be updated. If you learn new information about them, you can update them by returning an object with their exact "id".\n---\n${loreContext}\n---`;
         }
