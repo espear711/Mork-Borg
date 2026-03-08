@@ -1102,7 +1102,7 @@
     <button class="tab-btn" id="tabLore" onclick="togglePanel('lore')" title="Lore">
       <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
     </button>
-    <button class="tab-btn" id="tabPipeline" onclick="togglePanel('pipeline')" title="Pipeline">
+    <button class="tab-btn" id="tabPipeline" onclick="togglePanel('pipeline')" title="Agent">
       <svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
     </button>
     <button class="tab-btn" id="tabTables" onclick="togglePanel('tables')" title="Tables">
@@ -1208,15 +1208,15 @@
         Define tables with a !Command trigger. When !Command appears in any message or AI output, a random row is rolled and appended.
       </div>
     </div>
-    <!-- Pipeline Panel -->
+    <!-- Agent Panel -->
     <div class="panel-content" id="panelPipeline">
-      <div class="sidebar-header"><h2>Pipeline</h2></div>
+      <div class="sidebar-header"><h2>Agent</h2></div>
       <div class="pipeline-body">
         <div class="pipeline-flow" id="pipelineFlow"></div>
       </div>
       <div class="pipeline-info">
-        Add passes between input and output. Each pass sends prior results to the AI. !Commands are processed after each pass. Mem 0 = use global setting.
-        <button onclick="pipelineReset()" style="margin-top:6px; padding:4px 10px; background:var(--gray-mid); color:var(--gray-text); border:none; border-radius:4px; cursor:pointer; font-size:0.7rem;">Reset to Default Pipeline</button>
+        The agent uses function calling to roll dice and look up tables autonomously. Thinking level is auto-selected per action.
+        <button onclick="agentReset()" style="margin-top:6px; padding:4px 10px; background:var(--gray-mid); color:var(--gray-text); border:none; border-radius:4px; cursor:pointer; font-size:0.7rem;">Reset to Default Agent</button>
       </div>
     </div>
     <!-- Playstate Panel -->
@@ -1704,8 +1704,8 @@
 - Omens (= PRE, min 1, refresh each session): spend after a roll to deal max damage, reroll any die, reduce incoming dmg by d6, neutralize a crit/fumble, or lower DC by 4.
 
 === COMBAT ===
-- Players roll everything. Monsters never roll.
-- Initiative: PCs go first. Each PC tests AGI; fail = skip first turn.
+- The Referee rolls ALL dice using the roll_dice tool. The player never rolls.
+- Initiative: Roll 1d20+AGI for each combatant to determine order.
 - Melee: d20+STR vs DC 12. Damage = d6+STR. Ranged: d20+AGI vs DC 12. Damage = d6+AGI.
 - Defense: d20+AGI vs DC 12. Fail = take d6 + enemy HD, minus DR.
 - Crit 20 attack: double damage, mark armor depletion. Fumble 1 attack: mark weapon depletion.
@@ -1740,7 +1740,7 @@
 === NARRATIVE PRINCIPLES ===
 - Narrate in second person. Be vivid but concise.
 - Respect the Playstate absolutely. Never give items, gold, HP, or Omens the player didn't earn.
-- When outcome is uncertain, call for a test: "Test your STR" or "Roll d20+AGI vs DC 15." Wait for the result.
+- When outcome is uncertain, roll using the roll_dice tool and narrate the result.
 - NPCs have motivations. Track their location by hex. They act independently of the player.
 - Combat is dangerous. Low HP should feel desperate.
 - Do not break character. Do not explain mechanics unless asked.
@@ -2057,71 +2057,13 @@
     sendBtn.disabled = true;
 
     try {
-      const passes = pipeline.passes;
-      const passResults = []; // accumulate results from each pass
+      devLog(`════ Agent Processing ════`, 'header');
 
-      if (passes.length > 0) {
-        devLog(`════ Pipeline: ${passes.length} intermediate pass(es) + final ════`, 'header');
-      } else {
-        devLog(`════ Single Pass (no pipeline) ════`, 'header');
-      }
-
-      // Run intermediate passes
-      for (let i = 0; i < passes.length; i++) {
-        devLog(`── Pipeline Pass ${i + 1}/${passes.length} ──`, 'header');
-        devLog(`  Rules: ${passes[i].useRules !== false ? 'ON' : 'OFF'} | Playstate: ${passes[i].usePlaystate !== false ? 'ON' : 'OFF'} | Lorebook: ${passes[i].useLorebook ? 'ON' : 'OFF'} | MTM: ${passes[i].useMtm ? 'ON' : 'OFF'} | History: ${passes[i].useChatHistory ? 'ON' : 'OFF'} | Memory: ${passes[i].memoryOverride || 'global'}`, 'info');
-        const pass = passes[i];
-        const extraSystem = buildPassSystemPrompt(pass.instructions, passResults, i);
-        let result = await callGemini(chat.messages, {
-          useLorebook: pass.useLorebook,
-          useMtm: pass.useMtm,
-          useChatHistory: pass.useChatHistory,
-          useRules: pass.useRules !== false,
-          usePlaystate: pass.usePlaystate !== false,
-          extraSystem,
-          customMemoryDepth: pass.memoryOverride || 0
-        });
-
-        devLogDetail(`  Pass ${i + 1} AI Response (raw)`, result, 'success');
-
-        // Process !Commands in the AI's output
-        const processedResult = processCommands(result, `Pipeline Pass ${i + 1}`);
-        if (processedResult !== result) {
-          devLogDetail(`  Pass ${i + 1} After !Commands`, processedResult, 'success');
-        }
-        result = processedResult;
-        passResults.push({ passIndex: i + 1, text: result });
-      }
-
-      // Final pass
-      devLog(`── Final Pass ──`, 'header');
-      devLog(`  Rules: ${pipeline.finalUseRules !== false ? 'ON' : 'OFF'} | Playstate: ${pipeline.finalUsePlaystate !== false ? 'ON' : 'OFF'} | Lorebook: ${pipeline.finalUseLore !== false ? 'ON' : 'OFF'} | MTM: ${pipeline.finalUseMtm !== false ? 'ON' : 'OFF'} | History: ${pipeline.finalUseHistory !== false ? 'ON' : 'OFF'} | Memory: ${pipeline.finalMemoryOverride || 'global'}`, 'info');
-      const finalExtra = buildPassSystemPrompt(
-        pipeline.finalInstructions || '',
-        passResults,
-        passes.length
-      );
-      let replyText = await callGemini(chat.messages, {
-        useLorebook: pipeline.finalUseLore !== false,
-        useMtm: pipeline.finalUseMtm !== false,
-        useChatHistory: pipeline.finalUseHistory !== false,
-        useRules: pipeline.finalUseRules !== false,
-        usePlaystate: pipeline.finalUsePlaystate !== false,
-        extraSystem: finalExtra,
-        customMemoryDepth: pipeline.finalMemoryOverride || 0
-      });
-
-      devLogDetail(`  Final AI Response (raw)`, replyText, 'success');
-
-      // Process !Commands in the final output
-      const processedReply = processCommands(replyText, 'Final Pass');
-      if (processedReply !== replyText) {
-        devLogDetail(`  Final After !Commands`, processedReply, 'success');
-      }
-      replyText = processedReply;
+      // Run the agent loop (triage + tool-calling loop)
+      let replyText = await runAgent(chat.messages);
 
       chat.messages.push({ role: 'assistant', text: replyText });
-      devLog(`════ Message Flow Complete ════`, 'success');
+      devLog(`════ Agent Flow Complete ════`, 'success');
     } catch (err) {
       chat.messages.push({ role: 'error', text: 'Error: ' + err.message });
       devLog(`Error in message flow: ${err.message}`, 'error');
@@ -3605,152 +3547,394 @@ If there is no new lore to extract or update, just return an empty array [] insi
   }
   renderTables();
 
-  // ─── AI Pipeline ───
-  const DEFAULT_PIPELINE = {
-    passes: [
-      {
-        id: 'pass_assess', name: 'Assess & Plan',
-        instructions: 'You are a GAME PROCEDURE ANALYZER for a tabletop RPG called Iron & Omens. Given the player\'s action, identify which game mechanics apply and output a structured plan. Do NOT narrate or write prose.\n\nCRITICAL — THE REFEREE (YOU) ROLLS ALL DICE. The player NEVER rolls. When the player declares an action, you determine:\n1. Does this action have meaningful consequences on failure? If YES, impose a check. If NO, it simply succeeds.\n2. Default DC is 12 unless the action is obviously easy (DC 8) or obviously hard (DC 16+).\n3. Roll using !d20 for checks, !d6 for damage/effects. Apply ability modifiers from Playstate.\n4. For COMBAT: Roll initiative for all sides. Resolve the full exchange — attack rolls, damage, positioning — in one pass. Combat is not a back-and-forth grind; it is dramatic, consequential, and often resolved in moments. NPCs act intelligently: they surrender, threaten, flee, take hostages, or press advantages. A fight is rarely \"we trade blows until someone dies.\"\n5. For PERSUASION: Do NOT roll dice by default. Instead, evaluate what the player actually said in-character. Would this convince the NPC given their personality, motivations, and circumstances? If obviously unconvincing → auto-fail. If genuinely compelling → auto-succeed. Only if it could go either way (a narrow window) → impose a check.\n6. If a random encounter or table roll is needed, embed the appropriate !Command (e.g. !Monster, !Weather, !DungeonEvent).\n7. Note any lorebook entries, NPCs, or hex locations that should be referenced.\n\nRefer to the game rules and current playstate provided below.\n\nOutput format:\n[ACTION PLAN]\n- Procedure: ...\n- Check needed: Yes/No (reason)\n- DC: 12 (or adjusted)\n- Dice: !d20 + modifier vs DC / !d6 for damage\n- Tables needed: !Command\n- NPCs/Lore relevant: ...',
-        useRules: true, usePlaystate: true, useLorebook: false, useMtm: false, useChatHistory: true, memoryOverride: 10
-      },
-      {
-        id: 'pass_rules', name: 'Rules Check',
-        instructions: 'You are a RULES VALIDATOR for a tabletop RPG. You receive a structured action plan from a prior analysis pass. Verify every mechanic against the game rules, correct errors, and resolve dice outcomes. Do NOT narrate or write prose.\n\nCRITICAL — THE REFEREE ROLLS ALL DICE. The player never rolls. All checks, attacks, damage, and saves are resolved by you.\n\nYour job:\n1. Verify every mechanic against the Iron & Omens rules (HD, DR, DC values, ability modifiers, depletion triggers, omen costs).\n2. Resolve all dice rolls from the action plan: use the !d20 and !d6 results provided. State the formula, the rolled result, modifier, total, and outcome (success/fail/crit/fumble).\n3. For COMBAT: Resolve the entire combat exchange in one pass. Roll initiative for all combatants (!d20 + AGI mod each). Then resolve each combatant\'s action in initiative order — attacks, damage, reactions. NPCs act with self-preservation: they may surrender when outmatched, threaten rather than attack, flee when wounded, or press a tactical advantage (surrounding, disarming, holding hostage). Do not assume combat is a fight to the death.\n4. For PERSUASION: Verify whether the prior pass correctly applied the persuasion rule — no dice unless the argument could genuinely go either way. If the prior pass called for a roll on an obvious auto-succeed or auto-fail, correct it.\n5. Check inventory slot limits (STR+8), depletion rules, and resource tracking.\n6. Correct any errors in the plan. Output the VALIDATED action plan with resolved rolls and outcomes.\n\nRefer to the game rules and current playstate provided below.\n\nOutput format:\n[RULES VALIDATED]\n- Action: ... → Referee rolls !d20 = 14 + STR(+2) = 16 vs DC 12 → Hit, !d6 = 4 + 2 = 6 dmg\n- Depletion: weapon crit? No. Armor hit? Mark depletion.\n- Resources: 1 ration consumed, 3 remaining.\n- Combat resolved: Initiative order, full exchange, NPC reactions.',
-        useRules: true, usePlaystate: true, useLorebook: false, useMtm: false, useChatHistory: true, memoryOverride: 6
-      },
-      {
-        id: 'pass_world', name: 'World State',
-        instructions: 'You are a WORLD STATE TRACKER for a tabletop RPG. Given a validated action plan with resolved rolls, determine environmental details, NPC reactions, and changes to the game world. Do NOT narrate prose — output structured notes.\n\nYour job:\n1. Determine NPC reactions, morale, and dialogue based on lorebook entries and established personality.\n2. Describe environmental details appropriate to the current hex, terrain, weather, and time of day from Playstate.\n3. Track hex movement: if the party travels, note new hex coordinates and any points of interest.\n4. Track time: note watch advancement, day/night transitions, and rest requirements.\n5. Note any lorebook updates needed (new NPCs met, locations discovered, items gained/lost).\n\nOutput format:\n[WORLD CONTEXT]\n- Environment: ...\n- NPC reactions: ...\n- Time/Hex updates: ...\n- Lore updates needed: ...',
-        useRules: false, usePlaystate: true, useLorebook: true, useMtm: true, useChatHistory: true, memoryOverride: 10
-      },
-      {
-        id: 'pass_spatial', name: 'Spatial Skeleton',
-        instructions: 'You are a SPATIAL LAYOUT DESIGNER for a tabletop RPG. Using the world context and action results from prior passes, produce a clinical, precise description of the current scene\'s physical layout. Do NOT write prose, atmosphere, or narrative. Write like a battlefield diagram or architect\'s notes.\n\nYour job:\n1. Describe the physical space: dimensions, shape, elevation changes, distances between key points.\n2. List every INTERACTABLE ELEMENT in the scene: objects (barrels, crates, levers, doors), terrain features (cliffs, ledges, pits, rivers), cover positions, light sources, and environmental hazards.\n3. Note spatial relationships: \"The well is 20ft from the south gate. Three barrels of pitch sit against the east wall. A 15ft cliff drops to a lower ledge on the north side.\"\n4. Mark exits, paths, and chokepoints.\n5. Note where NPCs and creatures are positioned relative to the player and to each other.\n6. Include anything the player could reasonably climb, break, throw, hide behind, knock over, or use tactically.\n\nBe thorough. If it exists in the scene, it must appear here. The narrative pass depends on this skeleton — anything you omit will be lost in the prose.\n\nOutput format:\n[SPATIAL SKELETON]\n- Space: (dimensions, shape, terrain type)\n- Elevation: (changes, cliffs, stairs, ramps)\n- Interactables: (bulleted list with positions and distances)\n- NPCs/Creatures: (positions, facing, stance)\n- Exits: (directions, type, condition)\n- Hazards: (type, location, trigger)\n- Cover/Tactical: (positions, quality)',
-        useRules: false, usePlaystate: true, useLorebook: true, useMtm: false, useChatHistory: true, memoryOverride: 6
+  // ─── AI Agent System ───
+
+  // Tool definitions for Gemini function calling
+  const AGENT_TOOL_DECLARATIONS = [
+    {
+      name: 'roll_dice',
+      description: 'Roll dice using standard tabletop notation. Use for ALL random outcomes: ability checks (1d20+modifier), damage (1d6, 2d6+3), morale (2d6), etc. You MUST use this tool for any randomized outcome — never invent or assume a roll result.',
+      parameters: {
+        type: 'OBJECT',
+        properties: {
+          notation: { type: 'STRING', description: 'Standard dice notation: NdS or NdS+M or NdS-M. Examples: "1d20", "2d6+3", "1d20-1", "3d6"' },
+          reason: { type: 'STRING', description: 'Brief reason for this roll, e.g. "STR check to force open the rusted gate (DC 12)"' }
+        },
+        required: ['notation', 'reason']
       }
-    ],
-    finalInstructions: 'You are the NARRATOR for a dark, low-fantasy tabletop RPG called Iron & Omens. You receive structured analysis from prior processing passes (action plans, validated rules, world context, and a SPATIAL SKELETON). Synthesize everything into vivid, immersive prose.\n\nCRITICAL — SPATIAL SKELETON ANCHORING:\nYou MUST reference the Spatial Skeleton pass. Every interactable element, terrain feature, NPC position, exit, and hazard listed in the skeleton MUST appear in your prose. You are transforming a clinical layout into living description — but nothing gets cut. If the skeleton says there are three barrels of pitch against the east wall, those barrels must appear in your narrative. If there is a 15ft cliff, the reader must feel its height. The skeleton is your checklist.\n\nStructure your response in two parts:\n[SCENE] — An atmospheric, prose description of the location that covers ALL spatial elements from the skeleton. Weave in distances, interactables, and positions naturally but completely. The player should be able to picture the exact layout from your prose alone.\n[ACTION] — What happens as a result of the player\'s action, incorporating the validated rules and dice outcomes.\n\nYour job:\n1. Write in second person ("You charge forward...").\n2. Weave in the exact mechanical outcomes (damage dealt, HP lost, items used) naturally into the narrative — do NOT hide numbers, state them clearly.\n3. The referee rolls all dice — the player never rolls. Present outcomes as things that happen, not as prompts to roll.\n4. End with a clear prompt for the player\'s next action. Present meaningful choices when appropriate.\n5. Keep responses focused: 2-4 paragraphs for simple actions, longer for complex scenes.\n6. If any !Commands remain unresolved in prior pass results, embed them in your output for post-processing.\n7. Never contradict the validated rules or world state from prior passes.\n\nTone: Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories matter.',
-    finalUseRules: false, finalUsePlaystate: true, finalUseLore: true, finalUseMtm: true, finalUseHistory: true, finalMemoryOverride: 0
+    },
+    {
+      name: 'roll_table',
+      description: 'Roll on a game table to get a random result. Use for encounters, weather, reactions, broken results, etc. Available tables include: !Monster, !Weather, !Reaction, !Broken, !DungeonEvent, !EncounterNormal, !EncounterDifficult, !EncounterArduous, and all monster-specific tables (e.g. !AnkhegInfo, !DragonVariants).',
+      parameters: {
+        type: 'OBJECT',
+        properties: {
+          command: { type: 'STRING', description: 'The table command, e.g. "!Monster", "!Weather", "!Broken"' }
+        },
+        required: ['command']
+      }
+    }
+  ];
+
+  /** Execute a tool call locally and return the result string */
+  function executeToolCall(functionCall) {
+    const { name, args } = functionCall;
+    devLog(`  Tool call: ${name}(${JSON.stringify(args)})`, 'info');
+
+    if (name === 'roll_dice') {
+      const notation = args.notation || '1d20';
+      const reason = args.reason || '';
+      const result = parseDiceNotation(notation);
+      const output = `${notation} = ${result.rolls.join(' + ')}${result.modifier ? (result.modifier > 0 ? ' + ' + result.modifier : ' - ' + Math.abs(result.modifier)) : ''} = ${result.total} (${reason})`;
+      devLog(`  -> ${output}`, 'success');
+      return output;
+    }
+
+    if (name === 'roll_table') {
+      const command = args.command || '';
+      const tbl = randomTables.find(t => t.command.toLowerCase() === command.toLowerCase());
+      if (!tbl) {
+        const output = `[Table ${command} not found]`;
+        devLog(`  -> ${output}`, 'warn');
+        return output;
+      }
+      const result = tableRoll(tbl);
+      const output = `${command}: ${result}`;
+      devLog(`  -> ${output}`, 'success');
+      return output;
+    }
+
+    return `[Unknown tool: ${name}]`;
+  }
+
+  /** Parse dice notation like "2d6+3" and return actual random rolls */
+  function parseDiceNotation(notation) {
+    const match = /(\d+)d(\d+)([+-]\d+)?/i.exec(notation);
+    if (!match) return { rolls: [0], modifier: 0, total: 0 };
+    const count = parseInt(match[1]);
+    const sides = parseInt(match[2]);
+    const modifier = parseInt(match[3] || 0);
+    const rolls = [];
+    for (let i = 0; i < count; i++) {
+      rolls.push(Math.floor(Math.random() * sides) + 1);
+    }
+    const total = rolls.reduce((a, b) => a + b, 0) + modifier;
+    return { rolls, modifier, total };
+  }
+
+  /** Triage: quick classification to determine thinking level for main agent call */
+  async function triageAction(messages) {
+    const lastUser = [...messages].reverse().find(m => m.role === 'user');
+    if (!lastUser) return { thinkingLevel: 'LOW' };
+    const text = lastUser.text.toLowerCase();
+
+    // Heuristic triage — fast, no API call needed
+    const combatWords = ['attack', 'fight', 'hit', 'stab', 'shoot', 'slash', 'cast', 'spell', 'initiative', 'combat', 'kill', 'strike', 'swing', 'parry', 'dodge', 'block', 'charge', 'fire', 'throw', 'draw my', 'draw his', 'pull out', 'draw sword', 'draw weapon'];
+    const mathWords = ['damage', 'check', 'save', 'dc', 'depletion', 'heal', 'hp', 'inventory', 'slot', 'morale', 'dr ', 'armor'];
+
+    if (combatWords.some(w => text.includes(w))) return { thinkingLevel: 'MEDIUM' };
+    if (mathWords.some(w => text.includes(w))) return { thinkingLevel: 'MEDIUM' };
+    return { thinkingLevel: 'LOW' };
+  }
+
+  // Default agent instructions (the core referee prompt)
+  const DEFAULT_AGENT_INSTRUCTIONS = `You are the REFEREE and NARRATOR for a dark, low-fantasy tabletop RPG called Iron & Omens. You are a fair but merciless arbiter of the world. You run the game, roll the dice, and narrate the results — the player simply declares what they want to do.
+
+=== DICE & CHECKS ===
+You roll ALL dice using the roll_dice tool. The player NEVER rolls.
+- Only roll when failure has MEANINGFUL CONSEQUENCES. If an action has no real stakes, it simply succeeds.
+- Default DC is 12. Obviously easy (but still consequential) = DC 8. Hard = DC 16+.
+- Always state the roll, modifier, total, and DC in your narration so the player sees the math.
+
+=== PERSUASION ===
+Do NOT default to dice for social encounters. Instead, evaluate what the player actually said in-character:
+- If obviously unconvincing given the NPC's personality and motivations → auto-fail. No roll.
+- If genuinely compelling and the NPC would realistically be swayed → auto-succeed. No roll.
+- ONLY if the argument could genuinely go either way — a narrow window — impose a PRE check.
+Embody the NPC. React as they would.
+
+=== COMBAT ===
+When combat triggers:
+1. Roll initiative for all combatants (1d20 + AGI mod each) using roll_dice.
+2. Resolve each combatant's action in initiative order — attacks, damage, defense.
+3. NPCs act with INTELLIGENCE and SELF-PRESERVATION. They are not video game enemies.
+   - They surrender when outmatched. They threaten rather than attack when it serves them.
+   - They flee when wounded. They press tactical advantages (surround, disarm, take hostages).
+   - Three bandits don't fight to the death over a purse. They put swords to throats and negotiate.
+4. Combat is dramatic and consequential, often resolved in moments — not a grinding slog.
+
+=== SCENE DESCRIPTION (CRITICAL) ===
+When describing ANY location — new or revisited — you MUST follow a two-part internal process:
+
+STEP 1 — SPATIAL SKELETON (internal, structured):
+Before writing any prose, mentally map the scene:
+- Physical space: dimensions, shape, elevation, distances
+- Every INTERACTABLE element: objects (barrels, crates, levers, doors), terrain (cliffs, ledges, pits, rivers), cover, light sources, hazards
+- Spatial relationships: "The well is 20ft from the south gate. Three barrels of pitch sit against the east wall."
+- Exits, paths, chokepoints
+- NPC/creature positions relative to the player
+- Anything the player could climb, break, throw, hide behind, knock over, or use
+
+STEP 2 — NARRATIVE PROSE:
+Transform the skeleton into vivid, atmospheric prose. EVERY element from your skeleton MUST appear in the final description. Nothing gets cut. If you imagined three barrels against a wall, the reader must see those barrels. If there's a 15ft cliff, they must feel its height. The skeleton is your checklist — the prose is its living form.
+
+=== RESPONSE FORMAT ===
+Write in second person ("You charge forward...").
+- Weave mechanical outcomes (damage, HP, dice results) naturally into prose — show the numbers clearly.
+- End with a moment that invites the player to act. Present meaningful choices when appropriate.
+- Keep responses focused: 2-4 paragraphs for simple actions, longer for complex scenes or combat.
+- Do not break character. Do not explain mechanics unless asked.
+
+=== TONE ===
+Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories matter. Beauty exists but it is fragile and often hiding something worse.`;
+
+  const DEFAULT_AGENT_CONFIG = {
+    instructions: DEFAULT_AGENT_INSTRUCTIONS,
+    useRules: true,
+    usePlaystate: true,
+    useLorebook: true,
+    useMtm: true,
+    useChatHistory: true,
+    memoryOverride: 0,
+    maxToolCalls: 15
   };
-  let pipeline = loadJSON('pipeline', DEFAULT_PIPELINE);
 
-  function pipelinePersist() { saveJSON('pipeline', pipeline); }
+  let agentConfig = loadJSON('agentConfig', DEFAULT_AGENT_CONFIG);
 
-  function pipelineAddPass(index) {
-    const pass = {
-      id: 'pass_' + Date.now(),
-      name: 'Pass ' + (pipeline.passes.length + 1),
-      instructions: '',
-      useRules: true,
-      usePlaystate: true,
-      useLorebook: true,
-      useMtm: true,
-      useChatHistory: true,
-      memoryOverride: 0
-    };
-    pipeline.passes.splice(index, 0, pass);
-    pipelinePersist();
-    renderPipeline();
-  }
+  function agentPersist() { saveJSON('agentConfig', agentConfig); }
 
-  function pipelineReset() {
-    if (!confirm('Reset pipeline to default 4-stage configuration? This will overwrite your current pipeline.')) return;
-    pipeline = JSON.parse(JSON.stringify(DEFAULT_PIPELINE));
-    pipelinePersist();
-    renderPipeline();
-    devLog('Pipeline reset to default 4-stage configuration.', 'info');
-  }
+  /** Build system context for the agent call */
+  function buildAgentSystemPrompt(messages) {
+    const systemParts = [];
+    let injectionOrder = 1;
+    devLog(`── Building Agent System Context ──`, 'header');
 
-  function pipelineRemovePass(id) {
-    if (!confirm('Remove this pipeline pass?')) return;
-    pipeline.passes = pipeline.passes.filter(p => p.id !== id);
-    pipelinePersist();
-    renderPipeline();
-  }
-
-  function pipelineSave() {
-    // Read all pass data from DOM
-    for (const pass of pipeline.passes) {
-      const node = document.querySelector(`.pipeline-node[data-id="${pass.id}"]`);
-      if (!node) continue;
-      pass.instructions = node.querySelector('.pipe-instructions').value;
-      pass.useRules = node.querySelector('.pipe-rules').checked;
-      pass.usePlaystate = node.querySelector('.pipe-playstate').checked;
-      pass.useLorebook = node.querySelector('.pipe-lore').checked;
-      pass.useMtm = node.querySelector('.pipe-mtm').checked;
-      pass.useChatHistory = node.querySelector('.pipe-history').checked;
-      pass.memoryOverride = parseInt(node.querySelector('.pipe-memory').value) || 0;
+    // Agent instructions (identity/role)
+    if (agentConfig.instructions) {
+      systemParts.push(agentConfig.instructions);
+      devLogDetail(`  [${injectionOrder++}] Agent Instructions`, agentConfig.instructions, 'info');
     }
-    // Final output node
-    const finalNode = document.querySelector('.pipeline-node[data-id="final"]');
-    if (finalNode) {
-      pipeline.finalInstructions = finalNode.querySelector('.pipe-instructions').value;
-      pipeline.finalUseRules = finalNode.querySelector('.pipe-rules').checked;
-      pipeline.finalUsePlaystate = finalNode.querySelector('.pipe-playstate').checked;
-      pipeline.finalUseLore = finalNode.querySelector('.pipe-lore').checked;
-      pipeline.finalUseMtm = finalNode.querySelector('.pipe-mtm').checked;
-      pipeline.finalUseHistory = finalNode.querySelector('.pipe-history').checked;
-      pipeline.finalMemoryOverride = parseInt(finalNode.querySelector('.pipe-memory').value) || 0;
+
+    // Rules
+    if (agentConfig.useRules && systemInstructions.trim()) {
+      systemParts.push('[GAME RULES — Apply these mechanics when resolving actions]\n' + systemInstructions.trim());
+      devLogDetail(`  [${injectionOrder++}] Game Rules`, systemInstructions.trim(), 'info');
     }
-    pipelinePersist();
+
+    // Playstate
+    if (agentConfig.usePlaystate && playstateEnabled) {
+      const ps = getPlaystateForChat();
+      if (ps && ps.state) {
+        systemParts.push('[CURRENT PLAYSTATE — Character/game state. Respect this absolutely.]\n' + ps.state);
+        devLogDetail(`  [${injectionOrder++}] Playstate`, ps.state, 'info');
+      }
+    }
+
+    // Mid-term memory
+    if (agentConfig.useMtm) {
+      const mtm = getMtmSummaryForChat();
+      if (mtm) {
+        systemParts.push('[MID-TERM MEMORY — Summary of earlier events outside the conversation window. Maintain continuity.]\n' + mtm);
+        devLogDetail(`  [${injectionOrder++}] Mid-term Memory`, mtm, 'info');
+      }
+    }
+
+    // Lorebook
+    if (agentConfig.useLorebook) {
+      const lore = gatherLoreContext(messages);
+      if (lore) {
+        systemParts.push(lore);
+        devLogDetail(`  [${injectionOrder++}] Lorebook`, lore, 'info');
+      }
+    }
+
+    const full = systemParts.join('\n\n');
+    devLog(`── Agent Context Complete: ${injectionOrder - 1} blocks, ${full.length.toLocaleString()} chars ──`, 'header');
+    return full;
   }
 
-  function renderPipeline() {
+  /** Main agent loop — calls Gemini with tools, loops on function calls until final text */
+  async function runAgent(messages) {
+    const triage = await triageAction(messages);
+    devLog(`Triage: thinkingLevel=${triage.thinkingLevel}`, 'info');
+
+    const systemPrompt = buildAgentSystemPrompt(messages);
+    const effectiveMemory = agentConfig.memoryOverride > 0 ? agentConfig.memoryOverride : memoryDepth;
+
+    // Build initial contents from chat history
+    const validMsgs = messages.filter(m => m.role === 'user' || m.role === 'assistant');
+    const windowedMsgs = agentConfig.useChatHistory ? validMsgs.slice(-effectiveMemory) : validMsgs.slice(-1);
+    let contents = windowedMsgs.map(m => ({
+      role: m.role === 'user' ? 'user' : 'model',
+      parts: [{ text: m.text }]
+    }));
+
+    // Ensure contents starts with 'user' role (Gemini requirement)
+    if (contents.length > 0 && contents[0].role !== 'user') {
+      contents = contents.slice(1);
+    }
+
+    const maxIterations = agentConfig.maxToolCalls || 15;
+    let iteration = 0;
+
+    while (iteration < maxIterations) {
+      iteration++;
+      devLog(`── Agent iteration ${iteration}/${maxIterations} ──`, 'header');
+
+      // Build request body
+      const body = { contents };
+
+      if (systemPrompt) {
+        body.systemInstruction = { parts: [{ text: systemPrompt }] };
+      }
+
+      // Add tools
+      body.tools = [{ functionDeclarations: AGENT_TOOL_DECLARATIONS }];
+
+      // Set thinking level based on triage
+      const modelInfo = AVAILABLE_MODELS.find(m => m.id === selectedModel);
+      if (modelInfo && modelInfo.thinking === 'level') {
+        body.generationConfig = { thinkingConfig: { thinkingLevel: triage.thinkingLevel } };
+        devLog(`  Thinking: level=${triage.thinkingLevel}`, 'info');
+      } else if (modelInfo && modelInfo.thinking === 'budget') {
+        // Map level names to budget values for budget-based models
+        const budgetMap = { 'MINIMAL': 128, 'LOW': 1024, 'MEDIUM': 4096, 'HIGH': 12288 };
+        const budget = budgetMap[triage.thinkingLevel] || 1024;
+        body.generationConfig = { thinkingConfig: { thinkingBudget: budget } };
+        devLog(`  Thinking: budget=${budget} (mapped from ${triage.thinkingLevel})`, 'info');
+      }
+
+      devLog(`  API: model=${selectedModel}, ${contents.length} content blocks`, 'info');
+      devLogDetail(`  Request body`, JSON.stringify(body, null, 2), 'info');
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        devLogDetail(`  API Error`, errBody, 'error');
+        let detail = '';
+        try { detail = JSON.parse(errBody).error.message; } catch { detail = errBody; }
+        throw new Error(`API ${res.status}: ${detail}`);
+      }
+
+      const data = await res.json();
+      devLogDetail(`  API Response`, JSON.stringify(data, null, 2), 'success');
+
+      const candidate = data.candidates && data.candidates[0];
+      if (!candidate || !candidate.content || !candidate.content.parts) {
+        throw new Error('No response from model.');
+      }
+
+      const parts = candidate.content.parts;
+      const functionCalls = parts.filter(p => p.functionCall);
+      const textParts = parts.filter(p => p.text !== undefined && !p.thought);
+      const thoughtParts = parts.filter(p => p.thought);
+
+      if (thoughtParts.length > 0) {
+        devLogDetail(`  Model thinking`, thoughtParts.map(p => p.text).join(''), 'info');
+      }
+
+      // If no function calls, we're done — return the text
+      if (functionCalls.length === 0) {
+        const finalText = textParts.map(p => p.text).join('');
+        devLog(`  Agent complete after ${iteration} iteration(s), ${finalText.length} chars`, 'success');
+
+        // Process any !Commands that might be in the output
+        const processed = processCommands(finalText, 'Agent Output');
+        return processed;
+      }
+
+      // Execute tool calls and continue the loop
+      devLog(`  ${functionCalls.length} tool call(s) to execute`, 'info');
+
+      // Add the model's response to contents (preserving function call parts)
+      contents.push({ role: 'model', parts: parts });
+
+      // Execute each function call and build response parts
+      const responseParts = [];
+      for (const fc of functionCalls) {
+        const result = executeToolCall(fc.functionCall);
+        responseParts.push({
+          functionResponse: {
+            name: fc.functionCall.name,
+            response: { content: result }
+          }
+        });
+      }
+
+      // Add function responses as a user turn
+      contents.push({ role: 'user', parts: responseParts });
+    }
+
+    throw new Error(`Agent exceeded maximum iterations (${maxIterations}). This usually means the model is stuck in a tool-calling loop.`);
+  }
+
+  // Agent config UI
+  function agentReset() {
+    if (!confirm('Reset agent to default configuration? This will overwrite your current agent instructions.')) return;
+    agentConfig = JSON.parse(JSON.stringify(DEFAULT_AGENT_CONFIG));
+    agentPersist();
+    renderAgent();
+    devLog('Agent reset to default configuration.', 'info');
+  }
+
+  function agentSave() {
+    const panel = document.getElementById('panelPipeline');
+    if (!panel) return;
+    const instrEl = panel.querySelector('#agentInstructions');
+    if (instrEl) agentConfig.instructions = instrEl.value;
+    const rulesEl = panel.querySelector('#agentUseRules');
+    if (rulesEl) agentConfig.useRules = rulesEl.checked;
+    const psEl = panel.querySelector('#agentUsePlaystate');
+    if (psEl) agentConfig.usePlaystate = psEl.checked;
+    const loreEl = panel.querySelector('#agentUseLorebook');
+    if (loreEl) agentConfig.useLorebook = loreEl.checked;
+    const mtmEl = panel.querySelector('#agentUseMtm');
+    if (mtmEl) agentConfig.useMtm = mtmEl.checked;
+    const histEl = panel.querySelector('#agentUseHistory');
+    if (histEl) agentConfig.useChatHistory = histEl.checked;
+    const memEl = panel.querySelector('#agentMemoryOverride');
+    if (memEl) agentConfig.memoryOverride = parseInt(memEl.value) || 0;
+    const maxEl = panel.querySelector('#agentMaxTools');
+    if (maxEl) agentConfig.maxToolCalls = parseInt(maxEl.value) || 15;
+    agentPersist();
+  }
+
+  function renderAgent() {
     const flow = document.getElementById('pipelineFlow');
-    flow.innerHTML = '';
+    if (!flow) return;
 
-    // User Input node (fixed)
-    flow.innerHTML += `<div class="pipeline-node fixed-node">User's Input</div>`;
-    flow.innerHTML += `<div class="pipeline-arrow">&darr;</div>`;
-
-    // Add-pass button before first pass
-    flow.innerHTML += `<button class="pipeline-add-btn" onclick="pipelineAddPass(0)">+ Add Pass</button>`;
-    flow.innerHTML += `<div class="pipeline-arrow">&darr;</div>`;
-
-    // Intermediate passes
-    for (let i = 0; i < pipeline.passes.length; i++) {
-      const pass = pipeline.passes[i];
-      flow.innerHTML += `
-        <div class="pipeline-node" data-id="${pass.id}">
-          <div class="pipeline-pass-header">
-            <span class="pipeline-pass-title">Pass ${i + 1}${pass.name ? ': ' + escapeHtml(pass.name) : ''}</span>
-            <button class="pipeline-pass-remove" onclick="pipelineRemovePass('${pass.id}')" title="Remove pass">&times;</button>
-          </div>
-          <textarea class="pipe-instructions" placeholder="Instructions for this pass..." onchange="pipelineSave()">${escapeHtml(pass.instructions)}</textarea>
-          <div class="pipeline-toggles">
-            <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-rules" ${pass.useRules !== false ? 'checked' : ''} onchange="pipelineSave()"> Rules</label>
-            <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-playstate" ${pass.usePlaystate !== false ? 'checked' : ''} onchange="pipelineSave()"> Playstate</label>
-            <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-lore" ${pass.useLorebook ? 'checked' : ''} onchange="pipelineSave()"> Lorebook</label>
-            <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-mtm" ${pass.useMtm ? 'checked' : ''} onchange="pipelineSave()"> Mid-term Memory</label>
-            <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-history" ${pass.useChatHistory ? 'checked' : ''} onchange="pipelineSave()"> Chat History</label>
-            <label class="pipeline-toggle-item" title="Override memory depth for this pass (0 = use global setting)">Mem: <input type="number" class="pipe-memory" min="0" max="200" value="${pass.memoryOverride || 0}" onchange="pipelineSave()" style="width:48px; background:var(--gray-dark); color:var(--white); border:1px solid var(--gray-mid); border-radius:3px; padding:2px 4px; font-size:0.75rem;"></label>
-          </div>
-        </div>
-      `;
-      flow.innerHTML += `<div class="pipeline-arrow">&darr;</div>`;
-      flow.innerHTML += `<button class="pipeline-add-btn" onclick="pipelineAddPass(${i + 1})">+ Add Pass</button>`;
-      flow.innerHTML += `<div class="pipeline-arrow">&darr;</div>`;
-    }
-
-    // Final Output node
-    flow.innerHTML += `
-      <div class="pipeline-node final-node" data-id="final">
+    flow.innerHTML = `
+      <div class="pipeline-node" style="border-color: var(--red-dark);">
         <div class="pipeline-pass-header">
-          <span class="pipeline-pass-title">Final Output</span>
+          <span class="pipeline-pass-title">Agent Instructions</span>
         </div>
-        <textarea class="pipe-instructions" placeholder="Instructions for the final response (optional)..." onchange="pipelineSave()">${escapeHtml(pipeline.finalInstructions || '')}</textarea>
+        <textarea id="agentInstructions" class="pipe-instructions" placeholder="Agent system prompt..." onchange="agentSave()" style="min-height:200px;">${escapeHtml(agentConfig.instructions || '')}</textarea>
         <div class="pipeline-toggles">
-          <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-rules" ${pipeline.finalUseRules !== false ? 'checked' : ''} onchange="pipelineSave()"> Rules</label>
-          <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-playstate" ${pipeline.finalUsePlaystate !== false ? 'checked' : ''} onchange="pipelineSave()"> Playstate</label>
-          <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-lore" ${pipeline.finalUseLore !== false ? 'checked' : ''} onchange="pipelineSave()"> Lorebook</label>
-          <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-mtm" ${pipeline.finalUseMtm !== false ? 'checked' : ''} onchange="pipelineSave()"> Mid-term Memory</label>
-          <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-history" ${pipeline.finalUseHistory !== false ? 'checked' : ''} onchange="pipelineSave()"> Chat History</label>
-          <label class="pipeline-toggle-item" title="Override memory depth for the final pass (0 = use global setting)">Mem: <input type="number" class="pipe-memory" min="0" max="200" value="${pipeline.finalMemoryOverride || 0}" onchange="pipelineSave()" style="width:48px; background:var(--gray-dark); color:var(--white); border:1px solid var(--gray-mid); border-radius:3px; padding:2px 4px; font-size:0.75rem;"></label>
+          <label class="pipeline-toggle-item"><input type="checkbox" id="agentUseRules" ${agentConfig.useRules !== false ? 'checked' : ''} onchange="agentSave()"> Rules</label>
+          <label class="pipeline-toggle-item"><input type="checkbox" id="agentUsePlaystate" ${agentConfig.usePlaystate !== false ? 'checked' : ''} onchange="agentSave()"> Playstate</label>
+          <label class="pipeline-toggle-item"><input type="checkbox" id="agentUseLorebook" ${agentConfig.useLorebook !== false ? 'checked' : ''} onchange="agentSave()"> Lorebook</label>
+          <label class="pipeline-toggle-item"><input type="checkbox" id="agentUseMtm" ${agentConfig.useMtm !== false ? 'checked' : ''} onchange="agentSave()"> Mid-term Memory</label>
+          <label class="pipeline-toggle-item"><input type="checkbox" id="agentUseHistory" ${agentConfig.useChatHistory !== false ? 'checked' : ''} onchange="agentSave()"> Chat History</label>
+          <label class="pipeline-toggle-item" title="Override memory depth (0 = use global setting)">Mem: <input type="number" id="agentMemoryOverride" min="0" max="200" value="${agentConfig.memoryOverride || 0}" onchange="agentSave()" style="width:48px; background:var(--gray-dark); color:var(--white); border:1px solid var(--gray-mid); border-radius:3px; padding:2px 4px; font-size:0.75rem;"></label>
+          <label class="pipeline-toggle-item" title="Maximum tool calls per message (safety limit)">Max tools: <input type="number" id="agentMaxTools" min="1" max="50" value="${agentConfig.maxToolCalls || 15}" onchange="agentSave()" style="width:48px; background:var(--gray-dark); color:var(--white); border:1px solid var(--gray-mid); border-radius:3px; padding:2px 4px; font-size:0.75rem;"></label>
         </div>
+      </div>
+      <div style="margin-top:8px; padding:8px; background:var(--gray-dark); border:1px solid var(--gray-mid); border-radius:5px; font-size:0.75rem; color:var(--gray-text);">
+        <strong style="color:var(--red-accent);">Tools available to agent:</strong><br>
+        <code>roll_dice(notation, reason)</code> — Roll any dice (1d20+2, 2d6, etc.)<br>
+        <code>roll_table(command)</code> — Roll on game tables (!Monster, !Weather, etc.)<br>
+        <br>
+        <em>Thinking level auto-selected per action: LOW for exploration/social, MEDIUM for combat/math.</em>
       </div>
     `;
   }
-  renderPipeline();
+  renderAgent();
 
   // ─── Helpers ───
   function handleKey(ev) {
@@ -3846,7 +4030,7 @@ If there is no new lore to extract or update, just return an empty array [] insi
   devLog(`═══ App Initialized ═══`, 'header');
   devLog(`Model: ${selectedModel}`, 'info');
   devLog(`Tables: ${randomTables.length} loaded (${randomTables.filter(t=>t.enabled).length} enabled)`, 'info');
-  devLog(`Pipeline: ${pipeline.passes.length} intermediate passes + final`, 'info');
+  devLog(`Agent: tools=${AGENT_TOOL_DECLARATIONS.length}, maxCalls=${agentConfig.maxToolCalls}`, 'info');
   devLog(`Lorebook: ${lorebook.length} entries`, 'info');
   devLog(`Memory: ${memoryDepth} messages`, 'info');
   devLog(`Active chat: ${activeChatId || 'none'}`, 'info');
