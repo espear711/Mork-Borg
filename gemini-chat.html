@@ -3622,19 +3622,72 @@ If there is no new lore to extract or update, just return an empty array [] insi
     return { rolls, modifier, total };
   }
 
-  /** Triage: quick classification to determine thinking level for main agent call */
+  /** Triage: lightweight Gemini call with minimal thinking to classify the action and pick thinking level */
   async function triageAction(messages) {
     const lastUser = [...messages].reverse().find(m => m.role === 'user');
     if (!lastUser) return { thinkingLevel: 'LOW' };
-    const text = lastUser.text.toLowerCase();
 
-    // Heuristic triage — fast, no API call needed
-    const combatWords = ['attack', 'fight', 'hit', 'stab', 'shoot', 'slash', 'cast', 'spell', 'initiative', 'combat', 'kill', 'strike', 'swing', 'parry', 'dodge', 'block', 'charge', 'fire', 'throw', 'draw my', 'draw his', 'pull out', 'draw sword', 'draw weapon'];
-    const mathWords = ['damage', 'check', 'save', 'dc', 'depletion', 'heal', 'hp', 'inventory', 'slot', 'morale', 'dr ', 'armor'];
+    devLog(`── Triage Call ──`, 'header');
 
-    if (combatWords.some(w => text.includes(w))) return { thinkingLevel: 'MEDIUM' };
-    if (mathWords.some(w => text.includes(w))) return { thinkingLevel: 'MEDIUM' };
-    return { thinkingLevel: 'LOW' };
+    const triagePrompt = `Classify this player action for a tabletop RPG. Respond with ONLY one word — the thinking level the main AI agent should use:
+
+LOW — Simple actions: walking, looking around, talking, resting, shopping, asking questions, basic exploration, social interaction without stakes.
+MEDIUM — Actions requiring rules/math: combat, attacks, ability checks, spell casting, damage calculation, inventory management, travel with encounter rolls, anything with dice or mechanical resolution.
+HIGH — Extremely complex scenarios: multi-party combat with many combatants, intricate puzzles with multiple interacting mechanics, or situations requiring deep tactical analysis.
+
+Player's action: "${lastUser.text}"
+
+Respond with ONLY: LOW, MEDIUM, or HIGH`;
+
+    const contents = [{ role: 'user', parts: [{ text: triagePrompt }] }];
+    const body = {
+      contents,
+      systemInstruction: { parts: [{ text: 'You are a classifier. Respond with exactly one word: LOW, MEDIUM, or HIGH. Nothing else.' }] }
+    };
+
+    // Use the model's thinking config at minimal level
+    const modelInfo = AVAILABLE_MODELS.find(m => m.id === selectedModel);
+    if (modelInfo && modelInfo.thinking === 'level') {
+      body.generationConfig = { thinkingConfig: { thinkingLevel: 'MINIMAL' } };
+    } else if (modelInfo && modelInfo.thinking === 'budget') {
+      body.generationConfig = { thinkingConfig: { thinkingBudget: 128 } };
+    }
+
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        devLog(`  Triage API error (${res.status}), defaulting to LOW`, 'warn');
+        return { thinkingLevel: 'LOW' };
+      }
+
+      const data = await res.json();
+      const candidate = data.candidates && data.candidates[0];
+      if (!candidate || !candidate.content || !candidate.content.parts) {
+        devLog(`  Triage: no response, defaulting to LOW`, 'warn');
+        return { thinkingLevel: 'LOW' };
+      }
+
+      const textParts = candidate.content.parts.filter(p => p.text !== undefined && !p.thought);
+      const raw = textParts.map(p => p.text).join('').trim().toUpperCase();
+
+      // Extract the level — look for LOW, MEDIUM, or HIGH anywhere in the response
+      let level = 'LOW';
+      if (raw.includes('HIGH')) level = 'HIGH';
+      else if (raw.includes('MEDIUM')) level = 'MEDIUM';
+      else if (raw.includes('LOW')) level = 'LOW';
+
+      devLog(`  Triage result: ${level} (raw: "${raw}")`, 'success');
+      return { thinkingLevel: level };
+    } catch (err) {
+      devLog(`  Triage failed: ${err.message}, defaulting to LOW`, 'warn');
+      return { thinkingLevel: 'LOW' };
+    }
   }
 
   // Default agent instructions (the core referee prompt)
