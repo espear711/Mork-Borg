@@ -1222,7 +1222,8 @@
         <div class="pipeline-flow" id="pipelineFlow"></div>
       </div>
       <div class="pipeline-info">
-        Add passes between input and output. Each pass sends prior results to the AI. !Commands are processed after each pass.
+        Add passes between input and output. Each pass sends prior results to the AI. !Commands are processed after each pass. Mem 0 = use global setting.
+        <button onclick="pipelineReset()" style="margin-top:6px; padding:4px 10px; background:var(--gray-mid); color:var(--gray-text); border:none; border-radius:4px; cursor:pointer; font-size:0.7rem;">Reset to Default Pipeline</button>
       </div>
     </div>
     <!-- Playstate Panel -->
@@ -1397,7 +1398,273 @@
       id: 'tbl_dungeon_event', name: 'Dungeon Event (every 2 Turns)', command: '!DungeonEvent', group: 'Dungeon', enabled: true,
       rows: 'Wandering monster!\nNothing.\nNothing.\nNothing.\nNothing.\nNothing.',
       subRolls: []
-    }
+    },
+    {"id":"tbl_main","name":"Encounter (Monster)","command":"!Monster","group":"Encounters","rows":"Ankheg\nBasilisk\nBear\nChimera\nCockatrice\nCrocodile\nDragon\nGriffon\nHarpy\nHellhound\nHorse\nHydra\nLammasu\nMandible Mole\nManticore\nMedusa\nMimic\nNaga\nOgre\nOoze\nOwlbear\nRat (Giant)\nRoper\nRust Monster\nScorpion (Giant)\nShambling Mound\nShark\nSnake (Giant)\nSpider (Giant)\nSpôrshreek (Myconid)\nStirge\nTroll\nTyrannosaur\nVampire\nWight\nWolf\nWyvern\nZombie\nBrownie\nDwarf\nElf\nGnoll\nGnome\nGoblin\nHalfling\nHobgoblin\nHuman\nKobold\nLizardman\nLycanthrope\nOrc\nSerpent Folk\nSkaven","enabled":true,"subRolls":[{"label":"Info","formula":"!{Result}Info"},{"label":"Lair","formula":"!{Result}Lair"},{"label":"Num","formula":"!{Result}Num"},{"label":"Variant","formula":"!{Result}Variants"},{"label":"Harvest","formula":"!{Result}Harvest"}]},
+    {"id":"tbl_Ankheg_info","name":"Ankheg Info","group":"Monsters: Ankheg","command":"!AnkhegInfo","rows":"Giant subterranean insects that spray acid to soften earth and prey. Stats: 4d6 HP, Arm 2, Mandibles (d6+acid). [Acid Spray: Test AGI or armor reduced 1 tier. Can burrow underground to ambush.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Ankheg_lair","name":"Ankheg Lair","group":"Monsters: Ankheg","command":"!AnkhegLair","rows":"15%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Ankheg_num","name":"Ankheg Num","group":"Monsters: Ankheg","command":"!AnkhegNum","rows":"1-6","enabled":true,"subRolls":[]},
+    {"id":"tbl_Ankheg_var","name":"Ankheg Variants","group":"Monsters: Ankheg","command":"!AnkhegVariants","rows":"Standard\nStandard\nStandard\nSoldier (+1 Arm, +1 dmg)\nSoldier (+1 Arm, +1 dmg)\nQueen (8d6 HP, Arm 3).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Ankheg_harv","name":"Ankheg Harvest","group":"Monsters: Ankheg","command":"!AnkhegHarvest","rows":"Chitinous Plate (Crafting: Acid-Guard Cuirass / Alchemy: Potion of Stoneskin).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Basilisk_info","name":"Basilisk Info","group":"Monsters: Basilisk","command":"!BasiliskInfo","rows":"A reptilian horror whose baleful gaze locks the soul into a statue of stone. Stats: 5d6 HP, Arm 1, Bite (d6). [Petrifying Gaze: Test INT or turn to stone. Mirrors reflect gaze back at her.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Basilisk_lair","name":"Basilisk Lair","group":"Monsters: Basilisk","command":"!BasiliskLair","rows":"40%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Basilisk_num","name":"Basilisk Num","group":"Monsters: Basilisk","command":"!BasiliskNum","rows":"1-4","enabled":true,"subRolls":[]},
+    {"id":"tbl_Basilisk_var","name":"Basilisk Variants","group":"Monsters: Basilisk","command":"!BasiliskVariants","rows":"Standard\nStandard\nStandard\nGreater (8d6 HP, Arm 2)\nGreater (8d6 HP, Arm 2)\nCrimson (Gaze also causes d6 fire).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Basilisk_harv","name":"Basilisk Harvest","group":"Monsters: Basilisk","command":"!BasiliskHarvest","rows":"Basilisk Eye (Crafting: Shield of Reflection / Alchemy: Potion of Ironskin).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Bear_info","name":"Bear Info","group":"Monsters: Bear","command":"!BearInfo","rows":"Territorial beasts of the wild that defend their cubs with brutal force. Stats: 4d6 HP, Arm 0, Claws (d6). [Maul: If both claws hit, auto-grapple and deal d6 crush dmg.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Bear_lair","name":"Bear Lair","group":"Monsters: Bear","command":"!BearLair","rows":"20%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Bear_num","name":"Bear Num","group":"Monsters: Bear","command":"!BearNum","rows":"1-4","enabled":true,"subRolls":[]},
+    {"id":"tbl_Bear_var","name":"Bear Variants","group":"Monsters: Bear","command":"!BearVariants","rows":"Black\nBlack\nBlack\nBrown (+1 dmg)\nBrown (+1 dmg)\nCave (8d6 HP, Adv in dark).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Bear_harv","name":"Bear Harvest","group":"Monsters: Bear","command":"!BearHarvest","rows":"Gallbladder (Crafting: Cloak of Winter / Alchemy: Potion of Brutishness).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Chimera_info","name":"Chimera Info","group":"Monsters: Chimera","command":"!ChimeraInfo","rows":"A twisted fusion of lion, goat, and dragon born of dark, forgotten alchemy. Stats: 6d6 HP, Arm 1, Bite/Horns/Claws (2d6). [Dragon Breath: 2d6 fire dmg, 20' cone.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Chimera_lair","name":"Chimera Lair","group":"Monsters: Chimera","command":"!ChimeraLair","rows":"40%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Chimera_num","name":"Chimera Num","group":"Monsters: Chimera","command":"!ChimeraNum","rows":"1-4","enabled":true,"subRolls":[]},
+    {"id":"tbl_Chimera_var","name":"Chimera Variants","group":"Monsters: Chimera","command":"!ChimeraVariants","rows":"Red Head\nRed Head\nRed Head\nBlue (Lightning)\nBlack (Acid)\nGorgon (Petrify).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Chimera_harv","name":"Chimera Harvest","group":"Monsters: Chimera","command":"!ChimeraHarvest","rows":"Heart (Crafting: Charm of the Triune / Alchemy: Potion of Frenzy).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Cockatrice_info","name":"Cockatrice Info","group":"Monsters: Cockatrice","command":"!CockatriceInfo","rows":"A wretched avian-reptile hybrid that turns living things to stone with a peck. Stats: 2d6 HP, Arm 0, Beak (d6). [Calcifying Peck: Test TOU or begin turning to stone.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Cockatrice_lair","name":"Cockatrice Lair","group":"Monsters: Cockatrice","command":"!CockatriceLair","rows":"30%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Cockatrice_num","name":"Cockatrice Num","group":"Monsters: Cockatrice","command":"!CockatriceNum","rows":"1-6","enabled":true,"subRolls":[]},
+    {"id":"tbl_Cockatrice_var","name":"Cockatrice Variants","group":"Monsters: Cockatrice","command":"!CockatriceVariants","rows":"Standard\nStandard\nStandard\nFeral (+1d6 HP, Adv on Init)\nFeral (+1d6 HP, Adv on Init)\nVenomous (Peck adds d6 poison).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Cockatrice_harv","name":"Cockatrice Harvest","group":"Monsters: Cockatrice","command":"!CockatriceHarvest","rows":"Wattle (Crafting: Gorgon's Blade / Alchemy: Potion of Beastform).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Crocodile_info","name":"Crocodile Info","group":"Monsters: Crocodile","command":"!CrocodileInfo","rows":"Ancient, armored predators that lurk beneath murky swamp waters waiting for a meal. Stats: 3d6 HP, Arm 2, Bite (d6). [Death Roll: If bite hits, grappled and takes d6 dmg/round.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Crocodile_lair","name":"Crocodile Lair","group":"Monsters: Crocodile","command":"!CrocodileLair","rows":"0%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Crocodile_num","name":"Crocodile Num","group":"Monsters: Crocodile","command":"!CrocodileNum","rows":"3-24","enabled":true,"subRolls":[]},
+    {"id":"tbl_Crocodile_var","name":"Crocodile Variants","group":"Monsters: Crocodile","command":"!CrocodileVariants","rows":"Swamp\nSwamp\nSwamp\nSaltwater (5d6 HP, Arm 3)\nSaltwater (5d6 HP, Arm 3)\nPrehistoric (8d6 HP).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Crocodile_harv","name":"Crocodile Harvest","group":"Monsters: Crocodile","command":"!CrocodileHarvest","rows":"Hide (Crafting: Murk-walker Armor / Alchemy: Potion of Waterbreath).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Dragon_info","name":"Dragon Info","group":"Monsters: Dragon","command":"!DragonInfo","rows":"Apex magical predators that hoard gold and ancient wisdom in desolate peaks. Stats: 8d6 HP, Arm 3, Bite/Claws (2d6). [Breath Weapon: 3d6 dmg, 20' radius. Wing Buffet: Test AGI or knocked down.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Dragon_lair","name":"Dragon Lair","group":"Monsters: Dragon","command":"!DragonLair","rows":"60%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Dragon_num","name":"Dragon Num","group":"Monsters: Dragon","command":"!DragonNum","rows":"1-4","enabled":true,"subRolls":[]},
+    {"id":"tbl_Dragon_var","name":"Dragon Variants","group":"Monsters: Dragon","command":"!DragonVariants","rows":"Young (4d6 HP)\nYoung (4d6 HP)\nAdult\nAdult\nOld (Casts Tier 3 Magic)\nAncient (Casts Tier 5 Magic).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Dragon_harv","name":"Dragon Harvest","group":"Monsters: Dragon","command":"!DragonHarvest","rows":"Scale (Crafting: Dragon-plate / Alchemy: Potion of Dragonscales).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Griffon_info","name":"Griffon Info","group":"Monsters: Griffon","command":"!GriffonInfo","rows":"Proud, winged hunters that patrol the high crags with the sharp eyes of an eagle. Stats: 4d6 HP, Arm 0, Talons/Beak (d6). [Swoop: +d6 dmg on diving charge. Fly.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Griffon_lair","name":"Griffon Lair","group":"Monsters: Griffon","command":"!GriffonLair","rows":"25%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Griffon_num","name":"Griffon Num","group":"Monsters: Griffon","command":"!GriffonNum","rows":"2-12","enabled":true,"subRolls":[]},
+    {"id":"tbl_Griffon_var","name":"Griffon Variants","group":"Monsters: Griffon","command":"!GriffonVariants","rows":"Standard\nStandard\nStandard\nRazorbeak (Ignores Arm 1)\nRazorbeak (Ignores Arm 1)\nRoyal (Mountable).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Griffon_harv","name":"Griffon Harvest","group":"Monsters: Griffon","command":"!GriffonHarvest","rows":"Pinion (Crafting: Boots of Leaping / Alchemy: Potion of Shepherding).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Harpy_info","name":"Harpy Info","group":"Monsters: Harpy","command":"!HarpyInfo","rows":"Vile, winged crones whose discordant songs lead lost travelers to their doom. Stats: 2d6 HP, Arm 0, Talons (d6). [Siren Song: Test INT or be charmed and walk toward Harpy.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Harpy_lair","name":"Harpy Lair","group":"Monsters: Harpy","command":"!HarpyLair","rows":"25%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Harpy_num","name":"Harpy Num","group":"Monsters: Harpy","command":"!HarpyNum","rows":"2-12","enabled":true,"subRolls":[]},
+    {"id":"tbl_Harpy_var","name":"Harpy Variants","group":"Monsters: Harpy","command":"!HarpyVariants","rows":"Standard\nStandard\nStandard\nBlood-talon (Bleeding dmg)\nBlood-talon (Bleeding dmg)\nHag-touched (Tier 1 Domination magic).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Harpy_harv","name":"Harpy Harvest","group":"Monsters: Harpy","command":"!HarpyHarvest","rows":"Vocal Cords (Crafting: Lute of Allure / Alchemy: Potion of Control).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Hellhound_info","name":"Hellhound Info","group":"Monsters: Hellhound","command":"!HellhoundInfo","rows":"Fiendish canines from the infernal planes that track prey by the scent of burning soul. Stats: 3d6 HP, Arm 1, Bite (d6). [Breathe Fire: Test AGI or take d6 fire dmg. Pack Hunters: Adv on attacks if ally engaged.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Hellhound_lair","name":"Hellhound Lair","group":"Monsters: Hellhound","command":"!HellhoundLair","rows":"30%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Hellhound_num","name":"Hellhound Num","group":"Monsters: Hellhound","command":"!HellhoundNum","rows":"2-8","enabled":true,"subRolls":[]},
+    {"id":"tbl_Hellhound_var","name":"Hellhound Variants","group":"Monsters: Hellhound","command":"!HellhoundVariants","rows":"Standard\nStandard\nStandard\nCerberus (Two heads)\nCerberus (Two heads)\nNessian (6d6 HP, Arm 2).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Hellhound_harv","name":"Hellhound Harvest","group":"Monsters: Hellhound","command":"!HellhoundHarvest","rows":"Ember-gland (Crafting: Flaming Weapon Rune / Alchemy: Potion of Fire Breath).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Horse_info","name":"Horse Info","group":"Monsters: Horse","command":"!HorseInfo","rows":"Loyal steeds that have carried heroes across the realms since the dawn of time. Stats: 2d6 HP, Arm 0, Hooves (d6). [Mount: Grants rider +d6 move and Adv on attacks.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Horse_lair","name":"Horse Lair","group":"Monsters: Horse","command":"!HorseLair","rows":"0%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Horse_num","name":"Horse Num","group":"Monsters: Horse","command":"!HorseNum","rows":"1-20","enabled":true,"subRolls":[]},
+    {"id":"tbl_Horse_var","name":"Horse Variants","group":"Monsters: Horse","command":"!HorseVariants","rows":"Riding\nRiding\nRiding\nWarhorse (3d6 HP, Arm 1)\nWarhorse (3d6 HP, Arm 1)\nNightmare (Undead, breathes smoke).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Horse_harv","name":"Horse Harvest","group":"Monsters: Horse","command":"!HorseHarvest","rows":"Hoof/Hair (Crafting: Horseshoe of Luck / Alchemy: Potion of Striding).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Hydra_info","name":"Hydra Info","group":"Monsters: Hydra","command":"!HydraInfo","rows":"A swamp-dwelling multi-headed serpent that grows two new heads for every one severed. Stats: 6d6 HP, Arm 1, Bite (d6)x4. [Regrowth: Regains 1d6 HP/round unless killed by fire/acid.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Hydra_lair","name":"Hydra Lair","group":"Monsters: Hydra","command":"!HydraLair","rows":"20%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Hydra_num","name":"Hydra Num","group":"Monsters: Hydra","command":"!HydraNum","rows":"1","enabled":true,"subRolls":[]},
+    {"id":"tbl_Hydra_var","name":"Hydra Variants","group":"Monsters: Hydra","command":"!HydraVariants","rows":"Standard\nStandard\nStandard\nPyrohydra (Fire breath)\nPyrohydra (Fire breath)\nCryohydra (Frost breath).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Hydra_harv","name":"Hydra Harvest","group":"Monsters: Hydra","command":"!HydraHarvest","rows":"Blood (Crafting: Amulet of Vigor / Alchemy: Potion of Trollsblood).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Lammasu_info","name":"Lammasu Info","group":"Monsters: Lammasu","command":"!LammasuInfo","rows":"Benevolent, winged lions with human faces that guard sacred sites. Stats: 5d6 HP, Arm 1, Talons (d6). [Holy Aura: Undead/Demons Test PRE to approach.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Lammasu_lair","name":"Lammasu Lair","group":"Monsters: Lammasu","command":"!LammasuLair","rows":"30%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Lammasu_num","name":"Lammasu Num","group":"Monsters: Lammasu","command":"!LammasuNum","rows":"2-8","enabled":true,"subRolls":[]},
+    {"id":"tbl_Lammasu_var","name":"Lammasu Variants","group":"Monsters: Lammasu","command":"!LammasuVariants","rows":"Standard\nStandard\nStandard\nGolden (Tier 2 Illumination magic)\nGolden (Tier 2 Illumination magic)\nElder (8d6 HP, Tier 4 Illumination).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Lammasu_harv","name":"Lammasu Harvest","group":"Monsters: Lammasu","command":"!LammasuHarvest","rows":"Feather (Crafting: Holy Ward / Alchemy: Potion of Truesight).","enabled":true,"subRolls":[]},
+    {"id":"tbl_MandibleMole_info","name":"Mandible Mole Info","group":"Monsters: Mandible Mole","command":"!MandibleMoleInfo","rows":"Blind, chattering tunnel-dwellers that hunt by vibration and sense of touch. Stats: 4d6 HP, Arm 2, Mandibles (d6). [Tremorsense: Cannot be surprised. Undermine: Collapse floor.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_MandibleMole_lair","name":"Mandible Mole Lair","group":"Monsters: Mandible Mole","command":"!MandibleMoleLair","rows":"40%","enabled":true,"subRolls":[]},
+    {"id":"tbl_MandibleMole_num","name":"Mandible Mole Num","group":"Monsters: Mandible Mole","command":"!MandibleMoleNum","rows":"1-3","enabled":true,"subRolls":[]},
+    {"id":"tbl_MandibleMole_var","name":"Mandible Mole Variants","group":"Monsters: Mandible Mole","command":"!MandibleMoleVariants","rows":"Standard\nStandard\nStandard\nCrystal-clawed (Ignores Arm 1)\nCrystal-clawed (Ignores Arm 1)\nBehemoth (8d6 HP, Swallows targets).","enabled":true,"subRolls":[]},
+    {"id":"tbl_MandibleMole_harv","name":"Mandible Mole Harvest","group":"Monsters: Mandible Mole","command":"!MandibleMoleHarvest","rows":"Crystal Eye (Crafting: Helm of Darksight / Alchemy: Potion of Darksight).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Manticore_info","name":"Manticore Info","group":"Monsters: Manticore","command":"!ManticoreInfo","rows":"A winged beast with a human face and a tail that bristles with lethal spikes. Stats: 4d6 HP, Arm 1, Bite (d6). [Tail Spikes: Ranged attack 30', d6 dmg. Fires 3 spikes/round.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Manticore_lair","name":"Manticore Lair","group":"Monsters: Manticore","command":"!ManticoreLair","rows":"20%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Manticore_num","name":"Manticore Num","group":"Monsters: Manticore","command":"!ManticoreNum","rows":"1-4","enabled":true,"subRolls":[]},
+    {"id":"tbl_Manticore_var","name":"Manticore Variants","group":"Monsters: Manticore","command":"!ManticoreVariants","rows":"Standard\nStandard\nStandard\nVenom-tail (Poison dmg)\nVenom-tail (Poison dmg)\nMan-hunter (Mimics human cries).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Manticore_harv","name":"Manticore Harvest","group":"Monsters: Manticore","command":"!ManticoreHarvest","rows":"Spikes (Crafting: Darts of Seeking / Alchemy: Potion of Weaponskill).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Medusa_info","name":"Medusa Info","group":"Monsters: Medusa","command":"!MedusaInfo","rows":"A cursed, snake-haired exile whose reflection can paralyze the heart. Stats: 3d6 HP, Arm 0, Snakes (d6+poison). [Petrifying Gaze: Test INT or turn to stone.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Medusa_lair","name":"Medusa Lair","group":"Monsters: Medusa","command":"!MedusaLair","rows":"50%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Medusa_num","name":"Medusa Num","group":"Monsters: Medusa","command":"!MedusaNum","rows":"1-3","enabled":true,"subRolls":[]},
+    {"id":"tbl_Medusa_var","name":"Medusa Variants","group":"Monsters: Medusa","command":"!MedusaVariants","rows":"Standard\nStandard\nStandard\nBlindfolded (Immune to own gaze)\nBlindfolded (Immune to own gaze)\nGorgon-queen (5d6 HP, Tier 2 Domination magic).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Medusa_harv","name":"Medusa Harvest","group":"Monsters: Medusa","command":"!MedusaHarvest","rows":"Viper Hair (Crafting: Whip of Fangs / Alchemy: Potion of Mimicry).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Mimic_info","name":"Mimic Info","group":"Monsters: Mimic","command":"!MimicInfo","rows":"A shapeshifting dungeon predator that mimics furniture to catch the greedy. Stats: 3d6 HP, Arm 1, Bite (d6). [Adhesive: Weapons striking it are stuck. Auto-hits grappled foes.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Mimic_lair","name":"Mimic Lair","group":"Monsters: Mimic","command":"!MimicLair","rows":"0%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Mimic_num","name":"Mimic Num","group":"Monsters: Mimic","command":"!MimicNum","rows":"1","enabled":true,"subRolls":[]},
+    {"id":"tbl_Mimic_var","name":"Mimic Variants","group":"Monsters: Mimic","command":"!MimicVariants","rows":"Chest\nChest\nChest\nWeapon Rack\nWeapon Rack\nRoom Mimic (10d6 HP, entire floor adhesive).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Mimic_harv","name":"Mimic Harvest","group":"Monsters: Mimic","command":"!MimicHarvest","rows":"Adhesive (Crafting: Sovereign Glue / Alchemy: Potion of Windows).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Naga_info","name":"Naga Info","group":"Monsters: Naga","command":"!NagaInfo","rows":"Intelligent, serpent-bodied guardians protecting ancient vaults. Stats: 4d6 HP, Arm 1, Bite (d6). [Spellcaster: Casts Tier 2 magic. Constrict: Grapples on hit.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Naga_lair","name":"Naga Lair","group":"Monsters: Naga","command":"!NagaLair","rows":"75%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Naga_num","name":"Naga Num","group":"Monsters: Naga","command":"!NagaNum","rows":"1-2","enabled":true,"subRolls":[]},
+    {"id":"tbl_Naga_var","name":"Naga Variants","group":"Monsters: Naga","command":"!NagaVariants","rows":"Water Naga\nWater Naga\nWater Naga\nSpirit Naga (Undead, Tier 3 Corruption)\nSpirit Naga (Undead, Tier 3 Corruption)\nGuardian Naga (Tier 3 Illumination).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Naga_harv","name":"Naga Harvest","group":"Monsters: Naga","command":"!NagaHarvest","rows":"Scale (Crafting: Circlet of the Mind / Alchemy: Potion of Tongues).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Ogre_info","name":"Ogre Info","group":"Monsters: Ogre","command":"!OgreInfo","rows":"Brute-force monstrosities that scavenge the hills, smashing anything that resists. Stats: 4d6 HP, Arm 1, Greatclub (2d6). [Sweeping Blow: Hits two targets. Intimidation: -1 PRE to enemies.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Ogre_lair","name":"Ogre Lair","group":"Monsters: Ogre","command":"!OgreLair","rows":"20%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Ogre_num","name":"Ogre Num","group":"Monsters: Ogre","command":"!OgreNum","rows":"2-20","enabled":true,"subRolls":[]},
+    {"id":"tbl_Ogre_var","name":"Ogre Variants","group":"Monsters: Ogre","command":"!OgreVariants","rows":"Standard\nStandard\nStandard\nArmored (Arm 2)\nArmored (Arm 2)\nOgre Mage (6d6 HP, Tier 2 Illumination/Shadow).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Ogre_harv","name":"Ogre Harvest","group":"Monsters: Ogre","command":"!OgreHarvest","rows":"Marrow (Crafting: Belt of Giant Strength / Alchemy: Potion of Growth).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Ooze_info","name":"Ooze Info","group":"Monsters: Ooze","command":"!OozeInfo","rows":"Mindless, acidic protoplasm that dissolves all matter it touches. Stats: 3d6 HP, Arm 0, Pseudopod (d6). [Corrosive: Destroys non-magical metal on hit.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Ooze_lair","name":"Ooze Lair","group":"Monsters: Ooze","command":"!OozeLair","rows":"0%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Ooze_num","name":"Ooze Num","group":"Monsters: Ooze","command":"!OozeNum","rows":"1-3","enabled":true,"subRolls":[]},
+    {"id":"tbl_Ooze_var","name":"Ooze Variants","group":"Monsters: Ooze","command":"!OozeVariants","rows":"Gray Ooze\nGray Ooze\nGray Ooze\nOchre Jelly (Dissolves wood)\nOchre Jelly (Dissolves wood)\nGelatinous Cube (Invisible, paralyzes).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Ooze_harv","name":"Ooze Harvest","group":"Monsters: Ooze","command":"!OozeHarvest","rows":"Ooze Acid (Crafting: Acid Flask / Alchemy: Potion of Blackblood).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Owlbear_info","name":"Owlbear Info","group":"Monsters: Owlbear","command":"!OwlbearInfo","rows":"A fierce forest predator with the head of an owl and the body of a bear. Stats: 4d6 HP, Arm 1, Claws/Beak (d6). [Frenzied Hug: Grapples and crushes for 2d6 dmg.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Owlbear_lair","name":"Owlbear Lair","group":"Monsters: Owlbear","command":"!OwlbearLair","rows":"30%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Owlbear_num","name":"Owlbear Num","group":"Monsters: Owlbear","command":"!OwlbearNum","rows":"2-5","enabled":true,"subRolls":[]},
+    {"id":"tbl_Owlbear_var","name":"Owlbear Variants","group":"Monsters: Owlbear","command":"!OwlbearVariants","rows":"Standard\nStandard\nStandard\nSnowy\nSnowy\nScreeching (Disadvantage to all within 30').","enabled":true,"subRolls":[]},
+    {"id":"tbl_Owlbear_harv","name":"Owlbear Harvest","group":"Monsters: Owlbear","command":"!OwlbearHarvest","rows":"Beak (Crafting: Pick of Rending / Alchemy: Potion of Heroism).","enabled":true,"subRolls":[]},
+    {"id":"tbl_RatGiant_info","name":"Rat (Giant) Info","group":"Monsters: Rat (Giant)","command":"!RatGiantInfo","rows":"Voracious scavengers that thrive in the shadows, carrying filth and plague. Stats: 1d6 HP, Arm 0, Bite (d6/d). [Swarm: Reduces target Armor. Disease: Test TOU or sickened.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_RatGiant_lair","name":"Rat (Giant) Lair","group":"Monsters: Rat (Giant)","command":"!RatGiantLair","rows":"10%","enabled":true,"subRolls":[]},
+    {"id":"tbl_RatGiant_num","name":"Rat (Giant) Num","group":"Monsters: Rat (Giant)","command":"!RatGiantNum","rows":"5-50","enabled":true,"subRolls":[]},
+    {"id":"tbl_RatGiant_var","name":"Rat (Giant) Variants","group":"Monsters: Rat (Giant)","command":"!RatGiantVariants","rows":"Standard\nStandard\nStandard\nPlague-bearer (Poison dmg)\nPlague-bearer (Poison dmg)\nRat-King (Casts Tier 1 Shadow).","enabled":true,"subRolls":[]},
+    {"id":"tbl_RatGiant_harv","name":"Rat (Giant) Harvest","group":"Monsters: Rat (Giant)","command":"!RatGiantHarvest","rows":"Tail (Crafting: Cloak of the Sewers / Alchemy: Potion of Silentstep).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Roper_info","name":"Roper Info","group":"Monsters: Roper","command":"!RoperInfo","rows":"A cave-ceiling predator that lowers sticky, rope-like tentacles to ensnare prey. Stats: 4d6 HP, Arm 2, Tentacles (d6). [Reel In: Tentacle hits drag target 10'. Bite does 2d6 dmg to grappled foes.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Roper_lair","name":"Roper Lair","group":"Monsters: Roper","command":"!RoperLair","rows":"90%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Roper_num","name":"Roper Num","group":"Monsters: Roper","command":"!RoperNum","rows":"1-3","enabled":true,"subRolls":[]},
+    {"id":"tbl_Roper_var","name":"Roper Variants","group":"Monsters: Roper","command":"!RoperVariants","rows":"Standard\nStandard\nStandard\nStony (Arm 3)\nStony (Arm 3)\nUrophion (Electrical tentacles).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Roper_harv","name":"Roper Harvest","group":"Monsters: Roper","command":"!RoperHarvest","rows":"Strand (Crafting: Rope of Climbing / Alchemy: Potion of Telekinesis).","enabled":true,"subRolls":[]},
+    {"id":"tbl_RustMonster_info","name":"Rust Monster Info","group":"Monsters: Rust Monster","command":"!RustMonsterInfo","rows":"An insectoid scavenger that feeds exclusively on the iron of adventurers' gear. Stats: 2d6 HP, Arm 1, Antennae (0). [Oxidation: Destroys metal items.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_RustMonster_lair","name":"Rust Monster Lair","group":"Monsters: Rust Monster","command":"!RustMonsterLair","rows":"10%","enabled":true,"subRolls":[]},
+    {"id":"tbl_RustMonster_num","name":"Rust Monster Num","group":"Monsters: Rust Monster","command":"!RustMonsterNum","rows":"1-2","enabled":true,"subRolls":[]},
+    {"id":"tbl_RustMonster_var","name":"Rust Monster Variants","group":"Monsters: Rust Monster","command":"!RustMonsterVariants","rows":"Standard\nStandard\nStandard\nArmored\nArmored\nMagic-eater (Consumes enchantments).","enabled":true,"subRolls":[]},
+    {"id":"tbl_RustMonster_harv","name":"Rust Monster Harvest","group":"Monsters: Rust Monster","command":"!RustMonsterHarvest","rows":"Antennae (Crafting: Wand of Oxidation / Alchemy: Potion of Forget).","enabled":true,"subRolls":[]},
+    {"id":"tbl_ScorpionGiant_info","name":"Scorpion (Giant) Info","group":"Monsters: Scorpion (Giant)","command":"!ScorpionGiantInfo","rows":"Heavily armored stalkers of the desert that deliver a paralyzing sting. Stats: 3d6 HP, Arm 1, Claws/Sting (d6). [Sting: Auto-strikes if claw hits, Test TOU or 0 HP.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_ScorpionGiant_lair","name":"Scorpion (Giant) Lair","group":"Monsters: Scorpion (Giant)","command":"!ScorpionGiantLair","rows":"50%","enabled":true,"subRolls":[]},
+    {"id":"tbl_ScorpionGiant_num","name":"Scorpion (Giant) Num","group":"Monsters: Scorpion (Giant)","command":"!ScorpionGiantNum","rows":"1-4","enabled":true,"subRolls":[]},
+    {"id":"tbl_ScorpionGiant_var","name":"Scorpion (Giant) Variants","group":"Monsters: Scorpion (Giant)","command":"!ScorpionGiantVariants","rows":"Standard\nStandard\nStandard\nCave Scorpion (Arm 2)\nCave Scorpion (Arm 2)\nEmperor (6d6 HP, Arm 3).","enabled":true,"subRolls":[]},
+    {"id":"tbl_ScorpionGiant_harv","name":"Scorpion (Giant) Harvest","group":"Monsters: Scorpion (Giant)","command":"!ScorpionGiantHarvest","rows":"Venom Gland (Crafting: Assassin's Dagger / Alchemy: Potion of Brutishness).","enabled":true,"subRolls":[]},
+    {"id":"tbl_ShamblingMound_info","name":"Shambling Mound Info","group":"Monsters: Shambling Mound","command":"!ShamblingMoundInfo","rows":"A sentient heap of rotting vegetation that constricts prey. Stats: 4d6 HP, Arm 2, Slam (d6). [Lightning Absorption: Electrical attacks heal it. Constrict: Pinned targets take 2d6 dmg.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_ShamblingMound_lair","name":"Shambling Mound Lair","group":"Monsters: Shambling Mound","command":"!ShamblingMoundLair","rows":"30%","enabled":true,"subRolls":[]},
+    {"id":"tbl_ShamblingMound_num","name":"Shambling Mound Num","group":"Monsters: Shambling Mound","command":"!ShamblingMoundNum","rows":"1-3","enabled":true,"subRolls":[]},
+    {"id":"tbl_ShamblingMound_var","name":"Shambling Mound Variants","group":"Monsters: Shambling Mound","command":"!ShamblingMoundVariants","rows":"Standard\nStandard\nStandard\nSpore-choked (Poison gas aura)\nSpore-choked (Poison gas aura)\nAncient (Roots control flora).","enabled":true,"subRolls":[]},
+    {"id":"tbl_ShamblingMound_harv","name":"Shambling Mound Harvest","group":"Monsters: Shambling Mound","command":"!ShamblingMoundHarvest","rows":"Vine (Crafting: Armor of the Swamp / Alchemy: Potion of Barkskin).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Shark_info","name":"Shark Info","group":"Monsters: Shark","command":"!SharkInfo","rows":"The unthinking, razor-toothed masters of the deep who feed on anything that bleeds. Stats: 3d6 HP, Arm 0, Bite (d6). [Blood Frenzy: Advantage against wounded targets.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Shark_lair","name":"Shark Lair","group":"Monsters: Shark","command":"!SharkLair","rows":"0%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Shark_num","name":"Shark Num","group":"Monsters: Shark","command":"!SharkNum","rows":"3-12","enabled":true,"subRolls":[]},
+    {"id":"tbl_Shark_var","name":"Shark Variants","group":"Monsters: Shark","command":"!SharkVariants","rows":"Standard\nStandard\nStandard\nGreat White (5d6 HP)\nGreat White (5d6 HP)\nMegalodon (Swallows ships).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Shark_harv","name":"Shark Harvest","group":"Monsters: Shark","command":"!SharkHarvest","rows":"Tooth (Crafting: Serrated Harpoon / Alchemy: Potion of Waterbreath).","enabled":true,"subRolls":[]},
+    {"id":"tbl_SnakeGiant_info","name":"Snake (Giant) Info","group":"Monsters: Snake (Giant)","command":"!SnakeGiantInfo","rows":"Massive constrictors that rely on speed and crushing strength to secure their prey. Stats: 3d6 HP, Arm 0, Bite (d6). [Constrict: d6 dmg/round. Poison: Test TOU or paralyzed.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_SnakeGiant_lair","name":"Snake (Giant) Lair","group":"Monsters: Snake (Giant)","command":"!SnakeGiantLair","rows":"0%","enabled":true,"subRolls":[]},
+    {"id":"tbl_SnakeGiant_num","name":"Snake (Giant) Num","group":"Monsters: Snake (Giant)","command":"!SnakeGiantNum","rows":"1-8","enabled":true,"subRolls":[]},
+    {"id":"tbl_SnakeGiant_var","name":"Snake (Giant) Variants","group":"Monsters: Snake (Giant)","command":"!SnakeGiantVariants","rows":"Poisonous\nPoisonous\nPoisonous\nConstrictor (4d6 HP)\nConstrictor (4d6 HP)\nSpitting Cobra (Ranged poison).","enabled":true,"subRolls":[]},
+    {"id":"tbl_SnakeGiant_harv","name":"Snake (Giant) Harvest","group":"Monsters: Snake (Giant)","command":"!SnakeGiantHarvest","rows":"Scale (Crafting: Cloak of Slithering / Alchemy: Potion of Animalspeech).","enabled":true,"subRolls":[]},
+    {"id":"tbl_SpiderGiant_info","name":"Spider (Giant) Info","group":"Monsters: Spider (Giant)","command":"!SpiderGiantInfo","rows":"Web-spinning nightmares that lurk in the canopy waiting for a trapped meal. Stats: 3d6 HP, Arm 0, Bite (d6). [Web: Test STR to escape. Poison: Test TOU or paralyzed.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_SpiderGiant_lair","name":"Spider (Giant) Lair","group":"Monsters: Spider (Giant)","command":"!SpiderGiantLair","rows":"70%","enabled":true,"subRolls":[]},
+    {"id":"tbl_SpiderGiant_num","name":"Spider (Giant) Num","group":"Monsters: Spider (Giant)","command":"!SpiderGiantNum","rows":"1-8","enabled":true,"subRolls":[]},
+    {"id":"tbl_SpiderGiant_var","name":"Spider (Giant) Variants","group":"Monsters: Spider (Giant)","command":"!SpiderGiantVariants","rows":"Web-spinner\nWeb-spinner\nWeb-spinner\nWolf Spider (Jumps 30')\nWolf Spider (Jumps 30')\nPhase Spider (Teleports at will).","enabled":true,"subRolls":[]},
+    {"id":"tbl_SpiderGiant_harv","name":"Spider (Giant) Harvest","group":"Monsters: Spider (Giant)","command":"!SpiderGiantHarvest","rows":"Spinneret (Crafting: Net of Entanglement / Alchemy: Potion of Invisibility).","enabled":true,"subRolls":[]},
+    {"id":"tbl_SpôrshreekMyconid_info","name":"Spôrshreek (Myconid) Info","group":"Monsters: Spôrshreek (Myconid)","command":"!SpôrshreekMyconidInfo","rows":"Fungal growths that release clouds of spores to signal nearby predators when disturbed. Stats: 2d6 HP, Arm 0, Spores (d6). [Scream: Test PRE or draw monsters. Spore cloud: Test TOU or hallucinate.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_SpôrshreekMyconid_lair","name":"Spôrshreek (Myconid) Lair","group":"Monsters: Spôrshreek (Myconid)","command":"!SpôrshreekMyconidLair","rows":"0%","enabled":true,"subRolls":[]},
+    {"id":"tbl_SpôrshreekMyconid_num","name":"Spôrshreek (Myconid) Num","group":"Monsters: Spôrshreek (Myconid)","command":"!SpôrshreekMyconidNum","rows":"2-8","enabled":true,"subRolls":[]},
+    {"id":"tbl_SpôrshreekMyconid_var","name":"Spôrshreek (Myconid) Variants","group":"Monsters: Spôrshreek (Myconid)","command":"!SpôrshreekMyconidVariants","rows":"Standard\nStandard\nStandard\nViolet Fungus (Rotting tentacles)\nViolet Fungus (Rotting tentacles)\nShrieker King (Tier 2 Domination magic).","enabled":true,"subRolls":[]},
+    {"id":"tbl_SpôrshreekMyconid_harv","name":"Spôrshreek (Myconid) Harvest","group":"Monsters: Spôrshreek (Myconid)","command":"!SpôrshreekMyconidHarvest","rows":"Spore Sac (Crafting: Dust of Illusions / Alchemy: Potion of Plantspeech).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Stirge_info","name":"Stirge Info","group":"Monsters: Stirge","command":"!StirgeInfo","rows":"Winged parasites that latch onto the neck and drain blood to fuel their thirst. Stats: 1d6 HP, Arm 0, Proboscis (d6). [Blood Drain: Heals stirge. Auto-hits subsequent rounds.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Stirge_lair","name":"Stirge Lair","group":"Monsters: Stirge","command":"!StirgeLair","rows":"60%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Stirge_num","name":"Stirge Num","group":"Monsters: Stirge","command":"!StirgeNum","rows":"3-30","enabled":true,"subRolls":[]},
+    {"id":"tbl_Stirge_var","name":"Stirge Variants","group":"Monsters: Stirge","command":"!StirgeVariants","rows":"Standard\nStandard\nStandard\nSwarm (Counts as 1 entity)\nSwarm (Counts as 1 entity)\nDire Stirge (2d6 HP).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Stirge_harv","name":"Stirge Harvest","group":"Monsters: Stirge","command":"!StirgeHarvest","rows":"Proboscis (Crafting: Syringe of Healing / Alchemy: Potion of Beastform).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Troll_info","name":"Troll Info","group":"Monsters: Troll","command":"!TrollInfo","rows":"Savage, hulking monstrosities that regenerate flesh until burned to ash. Stats: 4d6 HP, Arm 1, Claws (d6). [Regeneration: Heals 1d6/round (Fire/Acid stops).]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Troll_lair","name":"Troll Lair","group":"Monsters: Troll","command":"!TrollLair","rows":"40%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Troll_num","name":"Troll Num","group":"Monsters: Troll","command":"!TrollNum","rows":"1-12","enabled":true,"subRolls":[]},
+    {"id":"tbl_Troll_var","name":"Troll Variants","group":"Monsters: Troll","command":"!TrollVariants","rows":"Standard\nStandard\nStandard\nCave Troll (Arm 2)\nCave Troll (Arm 2)\nTwo-headed (Cannot be surprised).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Troll_harv","name":"Troll Harvest","group":"Monsters: Troll","command":"!TrollHarvest","rows":"Blood (Crafting: Ring of Regeneration / Alchemy: Potion of Trollsblood).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Tyrannosaur_info","name":"Tyrannosaur Info","group":"Monsters: Tyrannosaur","command":"!TyrannosaurInfo","rows":"A massive, unthinking reptilian engine of pure hunger and teeth. Stats: 6d6 HP, Arm 2, Bite (2d6). [Swallow: Auto-hit if grappled.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Tyrannosaur_lair","name":"Tyrannosaur Lair","group":"Monsters: Tyrannosaur","command":"!TyrannosaurLair","rows":"0%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Tyrannosaur_num","name":"Tyrannosaur Num","group":"Monsters: Tyrannosaur","command":"!TyrannosaurNum","rows":"1-2","enabled":true,"subRolls":[]},
+    {"id":"tbl_Tyrannosaur_var","name":"Tyrannosaur Variants","group":"Monsters: Tyrannosaur","command":"!TyrannosaurVariants","rows":"Standard\nStandard\nStandard\nArmored Rex (Arm 3)\nArmored Rex (Arm 3)\nUndead Rex (Necrotic breath).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Tyrannosaur_harv","name":"Tyrannosaur Harvest","group":"Monsters: Tyrannosaur","command":"!TyrannosaurHarvest","rows":"T-Rex Tooth (Crafting: Greatsword of Severing / Alchemy: Potion of Growth).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Vampire_info","name":"Vampire Info","group":"Monsters: Vampire","command":"!VampireInfo","rows":"Seductive, predatory undead who sustain their immortal life through blood. Stats: 5d6 HP, Arm 1, Fangs (d6). [Drain: Drains stats/HP. Shapechange: Bat/Mist. Weakness: Sun/Water/Stake.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Vampire_lair","name":"Vampire Lair","group":"Monsters: Vampire","command":"!VampireLair","rows":"25%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Vampire_num","name":"Vampire Num","group":"Monsters: Vampire","command":"!VampireNum","rows":"1-4","enabled":true,"subRolls":[]},
+    {"id":"tbl_Vampire_var","name":"Vampire Variants","group":"Monsters: Vampire","command":"!VampireVariants","rows":"Standard\nStandard\nStandard\nLord (Casts Tier 3 Domination magic)\nLord (Casts Tier 3 Domination magic)\nNosferatu (Arm 2, stealth advantage).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Vampire_harv","name":"Vampire Harvest","group":"Monsters: Vampire","command":"!VampireHarvest","rows":"Fang (Crafting: Amulet of the Bat / Alchemy: Potion of Trollsblood).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Wight_info","name":"Wight Info","group":"Monsters: Wight","command":"!WightInfo","rows":"Malevolent spirits that inhabit the mummified remains of long-dead warriors. Stats: 3d6 HP, Arm 1, Claws (d6). [Life Drain: Drains 1 STR or AGI on hit. Only harmed by magic/silver.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Wight_lair","name":"Wight Lair","group":"Monsters: Wight","command":"!WightLair","rows":"70%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Wight_num","name":"Wight Num","group":"Monsters: Wight","command":"!WightNum","rows":"2-16","enabled":true,"subRolls":[]},
+    {"id":"tbl_Wight_var","name":"Wight Variants","group":"Monsters: Wight","command":"!WightVariants","rows":"Standard\nStandard\nStandard\nBarrow Wight (Rusted sword)\nBarrow Wight (Rusted sword)\nFrost Wight (Cold dmg).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Wight_harv","name":"Wight Harvest","group":"Monsters: Wight","command":"!WightHarvest","rows":"Grave Dust (Crafting: Blade of the Wraith / Alchemy: Potion of Silentstep).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Wolf_info","name":"Wolf Info","group":"Monsters: Wolf","command":"!WolfInfo","rows":"Pack-hunting predators that shadow travelers to test for weakness. Stats: 2d6 HP, Arm 0, Bite (d6). [Pack Tactics: Adv if teamed. Trip: Test AGI or knocked prone.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Wolf_lair","name":"Wolf Lair","group":"Monsters: Wolf","command":"!WolfLair","rows":"10%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Wolf_num","name":"Wolf Num","group":"Monsters: Wolf","command":"!WolfNum","rows":"2-20","enabled":true,"subRolls":[]},
+    {"id":"tbl_Wolf_var","name":"Wolf Variants","group":"Monsters: Wolf","command":"!WolfVariants","rows":"Standard\nStandard\nStandard\nDire Wolf (3d6 HP, Arm 1)\nDire Wolf (3d6 HP, Arm 1)\nWinter Wolf (Frost breath).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Wolf_harv","name":"Wolf Harvest","group":"Monsters: Wolf","command":"!WolfHarvest","rows":"Pelt (Crafting: Cloak of the Pack / Alchemy: Potion of Darksight).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Wyvern_info","name":"Wyvern Info","group":"Monsters: Wyvern","command":"!WyvernInfo","rows":"A dragon-kin that strikes from the skies with a venomous tail barb. Stats: 5d6 HP, Arm 1, Bite (d6)+Sting (d6). [Venom: Test TOU or 0 HP instantly.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Wyvern_lair","name":"Wyvern Lair","group":"Monsters: Wyvern","command":"!WyvernLair","rows":"30%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Wyvern_num","name":"Wyvern Num","group":"Monsters: Wyvern","command":"!WyvernNum","rows":"1-6","enabled":true,"subRolls":[]},
+    {"id":"tbl_Wyvern_var","name":"Wyvern Variants","group":"Monsters: Wyvern","command":"!WyvernVariants","rows":"Standard\nStandard\nStandard\nSand Wyvern (Sting is paralysis)\nSand Wyvern (Sting is paralysis)\nElder Wyvern (7d6 HP, Arm 2).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Wyvern_harv","name":"Wyvern Harvest","group":"Monsters: Wyvern","command":"!WyvernHarvest","rows":"Stinger (Crafting: Spear of Envenoming / Alchemy: Potion of Weaponskill).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Zombie_info","name":"Zombie Info","group":"Monsters: Zombie","command":"!ZombieInfo","rows":"Thoughtless husks that shamble endlessly in search of living prey. Stats: 2d6 HP, Arm 0, Bite (d6). [Relentless: 50% chance to stand at 0 HP. Shambling: Acts last.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Zombie_lair","name":"Zombie Lair","group":"Monsters: Zombie","command":"!ZombieLair","rows":"0%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Zombie_num","name":"Zombie Num","group":"Monsters: Zombie","command":"!ZombieNum","rows":"3-24","enabled":true,"subRolls":[]},
+    {"id":"tbl_Zombie_var","name":"Zombie Variants","group":"Monsters: Zombie","command":"!ZombieVariants","rows":"Standard\nStandard\nStandard\nPlague Zombie (Toxic gas aura)\nPlague Zombie (Toxic gas aura)\nHulk (4d6 HP, 2d6 dmg).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Zombie_harv","name":"Zombie Harvest","group":"Monsters: Zombie","command":"!ZombieHarvest","rows":"Bile (Crafting: Flask of Noxious Gas / Alchemy: Potion of Blackblood).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Brownie_info","name":"Brownie Info","group":"Monsters: Brownie","command":"!BrownieInfo","rows":"Tiny, reclusive fae that repair items in exchange for kindness. Stats: 1d6 HP, Arm 0, Dagger (d6/d). [Fae Agility: Disadvantage to spot. Teleport via shadows. Casts Tier 1 Illumination.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Brownie_lair","name":"Brownie Lair","group":"Monsters: Brownie","command":"!BrownieLair","rows":"20%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Brownie_num","name":"Brownie Num","group":"Monsters: Brownie","command":"!BrownieNum","rows":"4-16","enabled":true,"subRolls":[]},
+    {"id":"tbl_Brownie_var","name":"Brownie Variants","group":"Monsters: Brownie","command":"!BrownieVariants","rows":"Standard\nStandard\nStandard\nBoggart (Casts Confusion)\nBoggart (Casts Confusion)\nLeprechaun (Tier 2 Illumination).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Brownie_harv","name":"Brownie Harvest","group":"Monsters: Brownie","command":"!BrownieHarvest","rows":"[No harvestable materials]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Dwarf_info","name":"Dwarf Info","group":"Monsters: Dwarf","command":"!DwarfInfo","rows":"Squat, melancholy, and ill-mannered masters of stone and steel. Stats: 2d6 HP, Arm 2, Axe (d6). [Resist: Immune to poison/magic.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Dwarf_lair","name":"Dwarf Lair","group":"Monsters: Dwarf","command":"!DwarfLair","rows":"50%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Dwarf_num","name":"Dwarf Num","group":"Monsters: Dwarf","command":"!DwarfNum","rows":"40-400","enabled":true,"subRolls":[]},
+    {"id":"tbl_Dwarf_var","name":"Dwarf Variants","group":"Monsters: Dwarf","command":"!DwarfVariants","rows":"Standard\nStandard\nStandard\nRunesmith (Magical weapons)\nRunesmith (Magical weapons)\nThane (Tier 2 Illumination magic).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Dwarf_harv","name":"Dwarf Harvest","group":"Monsters: Dwarf","command":"!DwarfHarvest","rows":"[No harvestable materials]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Elf_info","name":"Elf Info","group":"Monsters: Elf","command":"!ElfInfo","rows":"Pale, gaunt, and ancient dwellers of the deep woods. Stats: 2d6 HP, Arm 1, Sword (d6). [Fey Grace: Disadvantage to hit with ranged. Immune to sleep.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Elf_lair","name":"Elf Lair","group":"Monsters: Elf","command":"!ElfLair","rows":"10%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Elf_num","name":"Elf Num","group":"Monsters: Elf","command":"!ElfNum","rows":"20-200","enabled":true,"subRolls":[]},
+    {"id":"tbl_Elf_var","name":"Elf Variants","group":"Monsters: Elf","command":"!ElfVariants","rows":"Wood Elf\nWood Elf\nWood Elf\nHigh Elf (Tier 1 Destruction)\nHigh Elf (Tier 1 Destruction)\nShadow Elf (Poison weapons, Tier 2 Shadow).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Elf_harv","name":"Elf Harvest","group":"Monsters: Elf","command":"!ElfHarvest","rows":"[No harvestable materials]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Gnoll_info","name":"Gnoll Info","group":"Monsters: Gnoll","command":"!GnollInfo","rows":"Hyena-headed marauders who relish the chaos of the hunt. Stats: 2d6 HP, Arm 1, Spear (d6). [Overwhelm: +1 dmg/ally. Track: Follows scents flawlessly.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Gnoll_lair","name":"Gnoll Lair","group":"Monsters: Gnoll","command":"!GnollLair","rows":"20%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Gnoll_num","name":"Gnoll Num","group":"Monsters: Gnoll","command":"!GnollNum","rows":"20-200","enabled":true,"subRolls":[]},
+    {"id":"tbl_Gnoll_var","name":"Gnoll Variants","group":"Monsters: Gnoll","command":"!GnollVariants","rows":"Standard\nStandard\nStandard\nFlind (uses flail)\nFlind (uses flail)\nDemon-sworn (Tier 1 Blood magic).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Gnoll_harv","name":"Gnoll Harvest","group":"Monsters: Gnoll","command":"!GnollHarvest","rows":"Hyena-gland (Crafting: Hunter's Salve / Alchemy: Potion of Frenzy).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Gnome_info","name":"Gnome Info","group":"Monsters: Gnome","command":"!GnomeInfo","rows":"Curious, subterranean engineers who hoard mechanical secrets. Stats: 2d6 HP, Arm 1, Warhammer (d6). [Tinker's Traps: 50% trap chance. Resist: Test INT vs magic.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Gnome_lair","name":"Gnome Lair","group":"Monsters: Gnome","command":"!GnomeLair","rows":"50%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Gnome_num","name":"Gnome Num","group":"Monsters: Gnome","command":"!GnomeNum","rows":"40-400","enabled":true,"subRolls":[]},
+    {"id":"tbl_Gnome_var","name":"Gnome Variants","group":"Monsters: Gnome","command":"!GnomeVariants","rows":"Standard\nStandard\nStandard\nDeep Gnome (Innate invisibility)\nDeep Gnome (Innate invisibility)\nArtificer (Uses mechanical constructs).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Gnome_harv","name":"Gnome Harvest","group":"Monsters: Gnome","command":"!GnomeHarvest","rows":"Tinker's Core (Crafting: Clockwork Decoy / Alchemy: Potion of Perspective).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Goblin_info","name":"Goblin Info","group":"Monsters: Goblin","command":"!GoblinInfo","rows":"Cowardly, quick-breeding vermin that plague civilization. Stats: 1d6 HP, Arm 1, Dagger (d6/d). [Skitter: Disengage freely. Swarm: Adv if outnumbering.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Goblin_lair","name":"Goblin Lair","group":"Monsters: Goblin","command":"!GoblinLair","rows":"40%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Goblin_num","name":"Goblin Num","group":"Monsters: Goblin","command":"!GoblinNum","rows":"40-400","enabled":true,"subRolls":[]},
+    {"id":"tbl_Goblin_var","name":"Goblin Variants","group":"Monsters: Goblin","command":"!GoblinVariants","rows":"Standard\nStandard\nStandard\nWarg-rider (Mounted)\nWarg-rider (Mounted)\nShaman (Tier 1 Destruction magic).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Goblin_harv","name":"Goblin Harvest","group":"Monsters: Goblin","command":"!GoblinHarvest","rows":"Goblin Ear (Crafting: Amulet of the Coward / Alchemy: Potion of Darksight).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Halfling_info","name":"Halfling Info","group":"Monsters: Halfling","command":"!HalflingInfo","rows":"Jovial, earth-dwelling folk who prioritize a warm hearth. Stats: 1d6 HP, Arm 0, Sling (d6/d). [Lucky: Reroll test 1/day. Nimble: Hard to hit at range.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Halfling_lair","name":"Halfling Lair","group":"Monsters: Halfling","command":"!HalflingLair","rows":"70%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Halfling_num","name":"Halfling Num","group":"Monsters: Halfling","command":"!HalflingNum","rows":"30-300","enabled":true,"subRolls":[]},
+    {"id":"tbl_Halfling_var","name":"Halfling Variants","group":"Monsters: Halfling","command":"!HalflingVariants","rows":"Standard\nStandard\nStandard\nStout (Uses axes)\nStout (Uses axes)\nBurglar (Backstab dmg).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Halfling_harv","name":"Halfling Harvest","group":"Monsters: Halfling","command":"!HalflingHarvest","rows":"Luckstone (Crafting: Ring of Evasion / Alchemy: Potion of Heroism).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Hobgoblin_info","name":"Hobgoblin Info","group":"Monsters: Hobgoblin","command":"!HobgoblinInfo","rows":"Regimented goblinoids that view war as an art. Stats: 2d6 HP, Arm 1, Sword (d6). [Shield Wall: Arm 2 if adjacent. Phalanx: Reach with spears.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Hobgoblin_lair","name":"Hobgoblin Lair","group":"Monsters: Hobgoblin","command":"!HobgoblinLair","rows":"25%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Hobgoblin_num","name":"Hobgoblin Num","group":"Monsters: Hobgoblin","command":"!HobgoblinNum","rows":"20-200","enabled":true,"subRolls":[]},
+    {"id":"tbl_Hobgoblin_var","name":"Hobgoblin Variants","group":"Monsters: Hobgoblin","command":"!HobgoblinVariants","rows":"Standard\nStandard\nStandard\nCaptain (Rallies troops)\nCaptain (Rallies troops)\nWarlord (High dmg).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Hobgoblin_harv","name":"Hobgoblin Harvest","group":"Monsters: Hobgoblin","command":"!HobgoblinHarvest","rows":"Iron Tusk (Crafting: Standard of Discipline / Alchemy: Potion of Ironskin).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Human_info","name":"Human Info","group":"Monsters: Human","command":"!HumanInfo","rows":"Murderers, thieves, and saints, adaptable to any environment. Stats: 2d6 HP, Arm 1, Sword (d6). [Adaptable: Rolls 3d6, take best 2 for Init.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Human_lair","name":"Human Lair","group":"Monsters: Human","command":"!HumanLair","rows":"Varies%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Human_num","name":"Human Num","group":"Monsters: Human","command":"!HumanNum","rows":"Varies","enabled":true,"subRolls":[]},
+    {"id":"tbl_Human_var","name":"Human Variants","group":"Monsters: Human","command":"!HumanVariants","rows":"Bandit (Standard)\nBandit (Standard)\nBandit (Standard)\nMercenary (3d6 HP, Arm 2)\nMercenary (3d6 HP, Arm 2)\nSorcerer (Tier 3 magic).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Human_harv","name":"Human Harvest","group":"Monsters: Human","command":"!HumanHarvest","rows":"[No harvestable materials]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Kobold_info","name":"Kobold Info","group":"Monsters: Kobold","command":"!KoboldInfo","rows":"Vicious, trap-laying lizard-folk that worship dragons. Stats: 1d6 HP, Arm 0, Dagger (d6/d). [Trap-setter: Traps inflict 2d6 dmg. Grovel: Can feign surrender.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Kobold_lair","name":"Kobold Lair","group":"Monsters: Kobold","command":"!KoboldLair","rows":"40%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Kobold_num","name":"Kobold Num","group":"Monsters: Kobold","command":"!KoboldNum","rows":"40-400","enabled":true,"subRolls":[]},
+    {"id":"tbl_Kobold_var","name":"Kobold Variants","group":"Monsters: Kobold","command":"!KoboldVariants","rows":"Standard\nStandard\nStandard\nDragonshield (Arm 2)\nDragonshield (Arm 2)\nSorcerer (Tier 1 Destruction).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Kobold_harv","name":"Kobold Harvest","group":"Monsters: Kobold","command":"!KoboldHarvest","rows":"Draconic Scale (Crafting: Boots of Springing / Alchemy: Potion of Dragonscales).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Lizardman_info","name":"Lizardman Info","group":"Monsters: Lizardman","command":"!LizardmanInfo","rows":"Stoic swamp reptilians protecting their tribal grounds. Stats: 2d6 HP, Arm 1, Club (d6). [Aquatic Ambush: Invisible submerged. Hold Breath: 10 mins.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Lizardman_lair","name":"Lizardman Lair","group":"Monsters: Lizardman","command":"!LizardmanLair","rows":"30%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Lizardman_num","name":"Lizardman Num","group":"Monsters: Lizardman","command":"!LizardmanNum","rows":"10-40","enabled":true,"subRolls":[]},
+    {"id":"tbl_Lizardman_var","name":"Lizardman Variants","group":"Monsters: Lizardman","command":"!LizardmanVariants","rows":"Standard\nStandard\nStandard\nChameleon (Hidden, surprise)\nChameleon (Hidden, surprise)\nShaman (Tier 2 Corruption magic).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Lizardman_harv","name":"Lizardman Harvest","group":"Monsters: Lizardman","command":"!LizardmanHarvest","rows":"Reptile Gland (Crafting: Underwater Mask / Alchemy: Potion of Waterbreath).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Lycanthrope_info","name":"Lycanthrope Info","group":"Monsters: Lycanthrope","command":"!LycanthropeInfo","rows":"Cursed mortals who lose humanity to the beast within. Stats: 4d6 HP, Arm 1, Bite (d6). [Silver Weakness: Requires silver/magic. Curse: Bitten targets infected.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Lycanthrope_lair","name":"Lycanthrope Lair","group":"Monsters: Lycanthrope","command":"!LycanthropeLair","rows":"15%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Lycanthrope_num","name":"Lycanthrope Num","group":"Monsters: Lycanthrope","command":"!LycanthropeNum","rows":"1-6","enabled":true,"subRolls":[]},
+    {"id":"tbl_Lycanthrope_var","name":"Lycanthrope Variants","group":"Monsters: Lycanthrope","command":"!LycanthropeVariants","rows":"Wererat\nWererat\nWerewolf\nWerewolf\nWereboar (Arm 2)\nWerebear (2d6 dmg).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Lycanthrope_harv","name":"Lycanthrope Harvest","group":"Monsters: Lycanthrope","command":"!LycanthropeHarvest","rows":"Fang (Crafting: Silvered Weapon Rune / Alchemy: Potion of Beastform).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Orc_info","name":"Orc Info","group":"Monsters: Orc","command":"!OrcInfo","rows":"Aggressive, tusked warriors driven by a need for conquest. Stats: 2d6 HP, Arm 1, Sword (d6). [Bloodlust: Final attack at 0 HP. Horde: Morale immunity.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Orc_lair","name":"Orc Lair","group":"Monsters: Orc","command":"!OrcLair","rows":"35%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Orc_num","name":"Orc Num","group":"Monsters: Orc","command":"!OrcNum","rows":"30-300","enabled":true,"subRolls":[]},
+    {"id":"tbl_Orc_var","name":"Orc Variants","group":"Monsters: Orc","command":"!OrcVariants","rows":"Standard\nStandard\nStandard\nBerserker (2 attacks)\nBerserker (2 attacks)\nChieftain (Arm 2, 2d6 dmg).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Orc_harv","name":"Orc Harvest","group":"Monsters: Orc","command":"!OrcHarvest","rows":"Tusk (Crafting: Helmet of the Horde / Alchemy: Potion of Brutishness).","enabled":true,"subRolls":[]},
+    {"id":"tbl_SerpentFolk_info","name":"Serpent Folk Info","group":"Monsters: Serpent Folk","command":"!SerpentFolkInfo","rows":"Ancient masters of magic who remember the world before man. Stats: 3d6 HP, Arm 1, Trident (d6). [Mesmerize: Test INT or stunned. Toxic Blood: Melee attackers take 1 acid dmg.]","enabled":true,"subRolls":[]},
+    {"id":"tbl_SerpentFolk_lair","name":"Serpent Folk Lair","group":"Monsters: Serpent Folk","command":"!SerpentFolkLair","rows":"20%","enabled":true,"subRolls":[]},
+    {"id":"tbl_SerpentFolk_num","name":"Serpent Folk Num","group":"Monsters: Serpent Folk","command":"!SerpentFolkNum","rows":"1-6","enabled":true,"subRolls":[]},
+    {"id":"tbl_SerpentFolk_var","name":"Serpent Folk Variants","group":"Monsters: Serpent Folk","command":"!SerpentFolkVariants","rows":"Warrior\nWarrior\nWarrior\nPriest (Tier 3 Domination magic)\nPriest (Tier 3 Domination magic)\nAbomination (Constricts).","enabled":true,"subRolls":[]},
+    {"id":"tbl_SerpentFolk_harv","name":"Serpent Folk Harvest","group":"Monsters: Serpent Folk","command":"!SerpentFolkHarvest","rows":"Serpent Eye (Crafting: Medallion of Thought Shield / Alchemy: Potion of Tongues).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Skaven_info","name":"Skaven Info","group":"Monsters: Skaven","command":"!SkavenInfo","rows":"Corrupt rat-folk dwelling in cities beneath the world. Stats: 1d6 HP, Arm 1, Dagger (d6/d). [Swarm: +1 to hit if teamed. Warp-bomb: 1-in-6 carry bomb (10' radius).]","enabled":true,"subRolls":[]},
+    {"id":"tbl_Skaven_lair","name":"Skaven Lair","group":"Monsters: Skaven","command":"!SkavenLair","rows":"20%","enabled":true,"subRolls":[]},
+    {"id":"tbl_Skaven_num","name":"Skaven Num","group":"Monsters: Skaven","command":"!SkavenNum","rows":"20-200","enabled":true,"subRolls":[]},
+    {"id":"tbl_Skaven_var","name":"Skaven Variants","group":"Monsters: Skaven","command":"!SkavenVariants","rows":"Clanrat\nClanrat\nClanrat\nStormvermin (Halberd)\nStormvermin (Halberd)\nGrey Seer (Tier 2 Shadow magic).","enabled":true,"subRolls":[]},
+    {"id":"tbl_Skaven_harv","name":"Skaven Harvest","group":"Monsters: Skaven","command":"!SkavenHarvest","rows":"Warp-stone Shard (Crafting: Warp-blade / Alchemy: Potion of Blasphemy).","enabled":true,"subRolls":[]}
   ];
   let randomTables = loadJSON('randomTables', DEFAULT_TABLES);
   let editingTableId = null;
@@ -1718,14 +1985,15 @@
       // Run intermediate passes
       for (let i = 0; i < passes.length; i++) {
         devLog(`── Pipeline Pass ${i + 1}/${passes.length} ──`, 'header');
-        devLog(`  Lorebook: ${passes[i].useLorebook ? 'ON' : 'OFF'} | MTM: ${passes[i].useMtm ? 'ON' : 'OFF'} | History: ${passes[i].useChatHistory ? 'ON' : 'OFF'}`, 'info');
+        devLog(`  Lorebook: ${passes[i].useLorebook ? 'ON' : 'OFF'} | MTM: ${passes[i].useMtm ? 'ON' : 'OFF'} | History: ${passes[i].useChatHistory ? 'ON' : 'OFF'} | Memory: ${passes[i].memoryOverride || 'global'}`, 'info');
         const pass = passes[i];
         const extraSystem = buildPassSystemPrompt(pass.instructions, passResults, i);
         let result = await callGemini(chat.messages, {
           useLorebook: pass.useLorebook,
           useMtm: pass.useMtm,
           useChatHistory: pass.useChatHistory,
-          extraSystem
+          extraSystem,
+          customMemoryDepth: pass.memoryOverride || 0
         });
 
         devLogDetail(`  Pass ${i + 1} AI Response (raw)`, result, 'success');
@@ -1741,7 +2009,7 @@
 
       // Final pass
       devLog(`── Final Pass ──`, 'header');
-      devLog(`  Lorebook: ${pipeline.finalUseLore !== false ? 'ON' : 'OFF'} | MTM: ${pipeline.finalUseMtm !== false ? 'ON' : 'OFF'} | History: ${pipeline.finalUseHistory !== false ? 'ON' : 'OFF'}`, 'info');
+      devLog(`  Lorebook: ${pipeline.finalUseLore !== false ? 'ON' : 'OFF'} | MTM: ${pipeline.finalUseMtm !== false ? 'ON' : 'OFF'} | History: ${pipeline.finalUseHistory !== false ? 'ON' : 'OFF'} | Memory: ${pipeline.finalMemoryOverride || 'global'}`, 'info');
       const finalExtra = buildPassSystemPrompt(
         pipeline.finalInstructions || '',
         passResults,
@@ -1751,7 +2019,8 @@
         useLorebook: pipeline.finalUseLore !== false,
         useMtm: pipeline.finalUseMtm !== false,
         useChatHistory: pipeline.finalUseHistory !== false,
-        extraSystem: finalExtra
+        extraSystem: finalExtra,
+        customMemoryDepth: pipeline.finalMemoryOverride || 0
       });
 
       devLogDetail(`  Final AI Response (raw)`, replyText, 'success');
@@ -1892,13 +2161,14 @@
 
   // ─── Gemini API Call ───
   async function callGemini(messages, opts = {}) {
-    const { useLorebook = true, useMtm = true, useChatHistory = true, extraSystem = '' } = opts;
+    const { useLorebook = true, useMtm = true, useChatHistory = true, extraSystem = '', customMemoryDepth = 0 } = opts;
+    const effectiveMemory = customMemoryDepth > 0 ? customMemoryDepth : memoryDepth;
 
     // Build the contents array
     let contents;
     if (useChatHistory) {
       const validMsgs = messages.filter(m => m.role === 'user' || m.role === 'assistant');
-      const windowedMsgs = validMsgs.slice(-memoryDepth);
+      const windowedMsgs = validMsgs.slice(-effectiveMemory);
       contents = windowedMsgs.map(m => ({
         role: m.role === 'user' ? 'user' : 'model',
         parts: [{ text: m.text }]
@@ -1975,7 +2245,7 @@
       devLogDetail(`  Full systemInstruction payload`, fullSystemText, 'header');
     }
 
-    devLog(`API Request: Sending ${contents.length} history messages + System Context`, 'info');
+    devLog(`API Request: Sending ${contents.length} history messages (memory depth: ${effectiveMemory}${customMemoryDepth > 0 ? ' [override]' : ''}) + System Context`, 'info');
     
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
 
@@ -3213,7 +3483,28 @@ If there is no new lore to extract or update, just return an empty array [] insi
   renderTables();
 
   // ─── AI Pipeline ───
-  let pipeline = loadJSON('pipeline', { passes: [], finalInstructions: '', finalUseLore: true, finalUseMtm: true, finalUseHistory: true });
+  const DEFAULT_PIPELINE = {
+    passes: [
+      {
+        id: 'pass_assess', name: 'Assess & Plan',
+        instructions: 'You are the PLANNING layer of a multi-pass RPG referee pipeline. Analyze the player\'s action and determine:\n1. What game procedures apply (combat, skill test, travel, social, rest, shopping, etc.).\n2. For each procedure, list the exact mechanic: which ability, DC, damage dice, depletion checks, resource costs.\n3. If a random encounter or table roll is needed, embed the appropriate !Command (e.g. !Monster, !Weather, !DungeonEvent). Do NOT narrate — only output a structured action plan.\n4. Note any lorebook entries, NPCs, or hex locations that should be referenced.\n\nOutput format:\n[ACTION PLAN]\n- Procedure: ...\n- Mechanic: ...\n- Tables needed: !Command\n- NPCs/Lore relevant: ...',
+        useLorebook: false, useMtm: false, useChatHistory: true, memoryOverride: 10
+      },
+      {
+        id: 'pass_rules', name: 'Rules Check',
+        instructions: 'You are the RULES CHECKER layer. You receive an action plan from a prior pass. Your job:\n1. Verify every mechanic against the Iron & Omens rules in System Instructions (HD, DR, DC values, ability modifiers, depletion triggers, omen costs).\n2. Resolve any dice rolls mentioned: state the formula, roll result, and outcome (success/fail/crit/fumble). Players roll everything — monsters never roll.\n3. Check inventory slot limits (STR+8), depletion rules, and resource tracking.\n4. Correct any errors in the plan. Output the VALIDATED action plan with resolved rolls and outcomes.\n\nOutput format:\n[RULES VALIDATED]\n- Action: ... → Roll: d20+STR(+2) vs DC 12 = 17 → Hit, d6+2 = 5 dmg\n- Depletion: weapon crit? No. Armor hit? Mark depletion.\n- Resources: 1 ration consumed, 3 remaining.',
+        useLorebook: true, useMtm: false, useChatHistory: true, memoryOverride: 6
+      },
+      {
+        id: 'pass_world', name: 'World State',
+        instructions: 'You are the WORLD STATE layer. You receive a validated action plan with resolved rolls. Your job:\n1. Determine NPC reactions, morale, and dialogue based on lorebook entries and established personality.\n2. Describe environmental details appropriate to the current hex, terrain, weather, and time of day from Playstate.\n3. Track hex movement: if the party travels, note new hex coordinates and any points of interest.\n4. Track time: note watch advancement, day/night transitions, and rest requirements.\n5. Note any lorebook updates needed (new NPCs met, locations discovered, items gained/lost).\n\nOutput format:\n[WORLD CONTEXT]\n- Environment: ...\n- NPC reactions: ...\n- Time/Hex updates: ...\n- Lore updates needed: ...',
+        useLorebook: true, useMtm: true, useChatHistory: true, memoryOverride: 10
+      }
+    ],
+    finalInstructions: 'You are the NARRATOR — the final layer of a multi-pass RPG referee pipeline. You receive structured analysis from prior passes (action plans, validated rules, world context). Your job:\n1. Synthesize everything into vivid, immersive prose. Write in second person ("You charge forward...").\n2. Weave in the exact mechanical outcomes (damage dealt, HP lost, items used) naturally into the narrative — do NOT hide numbers, state them clearly.\n3. End with a clear prompt for the player\'s next action. Present meaningful choices when appropriate.\n4. Keep responses focused: 2-4 paragraphs for simple actions, longer for complex scenes.\n5. If any !Commands remain unresolved in prior pass results, embed them in your output for post-processing.\n6. Never contradict the validated rules or world state from prior passes.\n\nTone: Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories matter.',
+    finalUseLore: true, finalUseMtm: true, finalUseHistory: true, finalMemoryOverride: 0
+  };
+  let pipeline = loadJSON('pipeline', DEFAULT_PIPELINE);
 
   function pipelinePersist() { saveJSON('pipeline', pipeline); }
 
@@ -3224,11 +3515,20 @@ If there is no new lore to extract or update, just return an empty array [] insi
       instructions: '',
       useLorebook: true,
       useMtm: true,
-      useChatHistory: true
+      useChatHistory: true,
+      memoryOverride: 0
     };
     pipeline.passes.splice(index, 0, pass);
     pipelinePersist();
     renderPipeline();
+  }
+
+  function pipelineReset() {
+    if (!confirm('Reset pipeline to default 4-stage configuration? This will overwrite your current pipeline.')) return;
+    pipeline = JSON.parse(JSON.stringify(DEFAULT_PIPELINE));
+    pipelinePersist();
+    renderPipeline();
+    devLog('Pipeline reset to default 4-stage configuration.', 'info');
   }
 
   function pipelineRemovePass(id) {
@@ -3247,6 +3547,7 @@ If there is no new lore to extract or update, just return an empty array [] insi
       pass.useLorebook = node.querySelector('.pipe-lore').checked;
       pass.useMtm = node.querySelector('.pipe-mtm').checked;
       pass.useChatHistory = node.querySelector('.pipe-history').checked;
+      pass.memoryOverride = parseInt(node.querySelector('.pipe-memory').value) || 0;
     }
     // Final output node
     const finalNode = document.querySelector('.pipeline-node[data-id="final"]');
@@ -3255,6 +3556,7 @@ If there is no new lore to extract or update, just return an empty array [] insi
       pipeline.finalUseLore = finalNode.querySelector('.pipe-lore').checked;
       pipeline.finalUseMtm = finalNode.querySelector('.pipe-mtm').checked;
       pipeline.finalUseHistory = finalNode.querySelector('.pipe-history').checked;
+      pipeline.finalMemoryOverride = parseInt(finalNode.querySelector('.pipe-memory').value) || 0;
     }
     pipelinePersist();
   }
@@ -3285,6 +3587,7 @@ If there is no new lore to extract or update, just return an empty array [] insi
             <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-lore" ${pass.useLorebook ? 'checked' : ''} onchange="pipelineSave()"> Lorebook</label>
             <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-mtm" ${pass.useMtm ? 'checked' : ''} onchange="pipelineSave()"> Mid-term Memory</label>
             <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-history" ${pass.useChatHistory ? 'checked' : ''} onchange="pipelineSave()"> Chat History</label>
+            <label class="pipeline-toggle-item" title="Override memory depth for this pass (0 = use global setting)">Mem: <input type="number" class="pipe-memory" min="0" max="200" value="${pass.memoryOverride || 0}" onchange="pipelineSave()" style="width:48px; background:var(--gray-dark); color:var(--white); border:1px solid var(--gray-mid); border-radius:3px; padding:2px 4px; font-size:0.75rem;"></label>
           </div>
         </div>
       `;
@@ -3304,6 +3607,7 @@ If there is no new lore to extract or update, just return an empty array [] insi
           <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-lore" ${pipeline.finalUseLore !== false ? 'checked' : ''} onchange="pipelineSave()"> Lorebook</label>
           <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-mtm" ${pipeline.finalUseMtm !== false ? 'checked' : ''} onchange="pipelineSave()"> Mid-term Memory</label>
           <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-history" ${pipeline.finalUseHistory !== false ? 'checked' : ''} onchange="pipelineSave()"> Chat History</label>
+          <label class="pipeline-toggle-item" title="Override memory depth for the final pass (0 = use global setting)">Mem: <input type="number" class="pipe-memory" min="0" max="200" value="${pipeline.finalMemoryOverride || 0}" onchange="pipelineSave()" style="width:48px; background:var(--gray-dark); color:var(--white); border:1px solid var(--gray-mid); border-radius:3px; padding:2px 4px; font-size:0.75rem;"></label>
         </div>
       </div>
     `;
