@@ -528,29 +528,22 @@
     }
     .message-actions {
       position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
+      top: 4px;
+      right: 4px;
       display: flex;
       gap: 4px;
       opacity: 0;
       transition: opacity 0.2s;
       background: var(--gray-dark);
-      padding: 4px 8px;
+      padding: 2px 6px;
       border-radius: 6px;
       border: 1px solid var(--gray-mid);
       pointer-events: none;
+      z-index: 1;
     }
     .message:hover .message-actions {
       opacity: 1;
       pointer-events: auto;
-    }
-    .message.user .message-actions {
-      right: 100%;
-      margin-right: 8px;
-    }
-    .message.assistant .message-actions, .message.error .message-actions {
-      left: 100%;
-      margin-left: 8px;
     }
     .msg-btn {
       background: transparent;
