@@ -1272,22 +1272,17 @@
           <div class="settings-label">Model</div>
           <select id="modelSelect" onchange="saveModelSelection()" style="width:100%; padding:8px; background:var(--gray-darkest); border:1px solid var(--gray-light); border-radius:6px; color:var(--gray-bright); font-size:0.85rem;">
           </select>
-          <div class="settings-hint">Choose which Gemini model to use. Newer models cost more but produce better results.</div>
+          <div class="settings-hint">Choose which Gemini model to use.</div>
         </div>
-        <div id="thinkingConfig" style="display:none; margin-top:8px;">
-          <div class="settings-label">Thinking Level</div>
+        <div id="thinkingConfig" style="margin-top:8px;">
+          <div class="settings-label">Chat Thinking Level</div>
           <select id="thinkingLevelSelect" onchange="saveThinkingConfig()" style="width:100%; padding:8px; background:var(--gray-darkest); border:1px solid var(--gray-light); border-radius:6px; color:var(--gray-bright); font-size:0.85rem;">
             <option value="MINIMAL">Minimal (fastest, cheapest)</option>
             <option value="LOW">Low</option>
             <option value="MEDIUM">Medium</option>
             <option value="HIGH">High (best reasoning, most expensive)</option>
           </select>
-          <div class="settings-hint">Controls how much the model reasons before answering. Higher = better quality, slower, costs more.</div>
-        </div>
-        <div id="thinkingBudgetConfig" style="display:none; margin-top:8px;">
-          <div class="settings-label">Thinking Budget (tokens)</div>
-          <input type="number" id="thinkingBudgetInput" min="-1" max="24576" value="0" onchange="saveThinkingConfig()" style="width:100%; padding:8px; background:var(--gray-darkest); border:1px solid var(--gray-light); border-radius:6px; color:var(--gray-bright); font-size:0.85rem;">
-          <div class="settings-hint">0 = thinking off, -1 = dynamic (model decides), or set a specific token count (e.g. 1024, 2048).</div>
+          <div class="settings-hint">Thinking level for non-agent chat calls (e.g. playstate, MTM). The Agent has its own thinking level below.</div>
         </div>
         <hr class="settings-divider">
         <div>
@@ -1750,15 +1745,17 @@
 
   // ─── Model Selection ───
   const AVAILABLE_MODELS = [
-    { id: 'gemini-2.5-flash-lite', name: '2.5 Flash Lite', thinking: false },
-    { id: 'gemini-2.5-flash', name: '2.5 Flash', thinking: 'budget' },
     { id: 'gemini-3.1-flash-lite-preview', name: '3.1 Flash Lite (Preview)', thinking: 'level' }
   ];
   const THINKING_LEVELS = ['MINIMAL', 'LOW', 'MEDIUM', 'HIGH'];
 
-  let selectedModel = loadJSON('selectedModel', 'gemini-2.5-flash-lite');
-  let thinkingLevel = loadJSON('thinkingLevel', 'MINIMAL');
-  let thinkingBudget = loadJSON('thinkingBudget', 0); // 0 = off, -1 = dynamic, >0 = token count
+  let selectedModel = loadJSON('selectedModel', 'gemini-3.1-flash-lite-preview');
+  // Force migration from old models
+  if (!AVAILABLE_MODELS.find(m => m.id === selectedModel)) {
+    selectedModel = 'gemini-3.1-flash-lite-preview';
+    saveJSON('selectedModel', selectedModel);
+  }
+  let thinkingLevel = loadJSON('thinkingLevel', 'LOW');
 
   // ─── Side Panel Toggle ───
   let activePanel = null;
@@ -1838,30 +1835,13 @@
   }
 
   function updateThinkingUI() {
-    const modelInfo = AVAILABLE_MODELS.find(m => m.id === selectedModel);
-    const levelDiv = document.getElementById('thinkingConfig');
-    const budgetDiv = document.getElementById('thinkingBudgetConfig');
-
-    if (modelInfo && modelInfo.thinking === 'level') {
-      levelDiv.style.display = 'block';
-      budgetDiv.style.display = 'none';
-      document.getElementById('thinkingLevelSelect').value = thinkingLevel;
-    } else if (modelInfo && modelInfo.thinking === 'budget') {
-      levelDiv.style.display = 'none';
-      budgetDiv.style.display = 'block';
-      document.getElementById('thinkingBudgetInput').value = thinkingBudget;
-    } else {
-      levelDiv.style.display = 'none';
-      budgetDiv.style.display = 'none';
-    }
+    document.getElementById('thinkingLevelSelect').value = thinkingLevel;
   }
 
   function saveThinkingConfig() {
     thinkingLevel = document.getElementById('thinkingLevelSelect').value;
-    thinkingBudget = parseInt(document.getElementById('thinkingBudgetInput').value) || 0;
     saveJSON('thinkingLevel', thinkingLevel);
-    saveJSON('thinkingBudget', thinkingBudget);
-    devLog(`Thinking config updated — level: ${thinkingLevel}, budget: ${thinkingBudget}`, 'info');
+    devLog(`Chat thinking level updated: ${thinkingLevel}`, 'info');
   }
 
   initModelSelector();
@@ -2059,7 +2039,7 @@
     try {
       devLog(`════ Agent Processing ════`, 'header');
 
-      // Run the agent loop (triage + tool-calling loop)
+      // Run the agent loop (tool-calling loop)
       let replyText = await runAgent(chat.messages);
 
       chat.messages.push({ role: 'assistant', text: replyText });
@@ -2280,15 +2260,9 @@
       devLogDetail(`  Full systemInstruction payload`, fullSystemText, 'header');
     }
 
-    // Add thinking config if the model supports it
-    const modelInfo = AVAILABLE_MODELS.find(m => m.id === selectedModel);
-    if (modelInfo && modelInfo.thinking === 'level') {
-      body.generationConfig = { thinkingConfig: { thinkingLevel: thinkingLevel } };
-      devLog(`  Thinking: level=${thinkingLevel}`, 'info');
-    } else if (modelInfo && modelInfo.thinking === 'budget' && thinkingBudget !== 0) {
-      body.generationConfig = { thinkingConfig: { thinkingBudget: thinkingBudget } };
-      devLog(`  Thinking: budget=${thinkingBudget}`, 'info');
-    }
+    // Add thinking config
+    body.generationConfig = { thinkingConfig: { thinkingLevel: thinkingLevel } };
+    devLog(`  Thinking: level=${thinkingLevel}`, 'info');
 
     devLog(`API Request: model=${selectedModel}, ${contents.length} msgs (mem ${effectiveMemory}${customMemoryDepth > 0 ? ' [override]' : ''})`, 'info');
 
@@ -3623,74 +3597,6 @@ If there is no new lore to extract or update, just return an empty array [] insi
     return { rolls, modifier, total };
   }
 
-  /** Triage: lightweight Gemini call with minimal thinking to classify the action and pick thinking level */
-  async function triageAction(messages) {
-    const lastUser = [...messages].reverse().find(m => m.role === 'user');
-    if (!lastUser) return { thinkingLevel: 'LOW' };
-
-    devLog(`── Triage Call ──`, 'header');
-
-    const triagePrompt = `Classify this player action for a tabletop RPG. Respond with ONLY one word — the thinking level the main AI agent should use:
-
-LOW — Simple actions: walking, looking around, talking, resting, shopping, asking questions, basic exploration, social interaction without stakes.
-MEDIUM — Actions requiring rules/math: combat, attacks, ability checks, spell casting, damage calculation, inventory management, travel with encounter rolls, anything with dice or mechanical resolution.
-HIGH — Extremely complex scenarios: multi-party combat with many combatants, intricate puzzles with multiple interacting mechanics, or situations requiring deep tactical analysis.
-
-Player's action: "${lastUser.text}"
-
-Respond with ONLY: LOW, MEDIUM, or HIGH`;
-
-    const contents = [{ role: 'user', parts: [{ text: triagePrompt }] }];
-    const body = {
-      contents,
-      systemInstruction: { parts: [{ text: 'You are a classifier. Respond with exactly one word: LOW, MEDIUM, or HIGH. Nothing else.' }] }
-    };
-
-    // Use the model's thinking config at minimal level
-    const modelInfo = AVAILABLE_MODELS.find(m => m.id === selectedModel);
-    if (modelInfo && modelInfo.thinking === 'level') {
-      body.generationConfig = { thinkingConfig: { thinkingLevel: 'MINIMAL' } };
-    } else if (modelInfo && modelInfo.thinking === 'budget') {
-      body.generationConfig = { thinkingConfig: { thinkingBudget: 128 } };
-    }
-
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      if (!res.ok) {
-        devLog(`  Triage API error (${res.status}), defaulting to LOW`, 'warn');
-        return { thinkingLevel: 'LOW' };
-      }
-
-      const data = await res.json();
-      const candidate = data.candidates && data.candidates[0];
-      if (!candidate || !candidate.content || !candidate.content.parts) {
-        devLog(`  Triage: no response, defaulting to LOW`, 'warn');
-        return { thinkingLevel: 'LOW' };
-      }
-
-      const textParts = candidate.content.parts.filter(p => p.text !== undefined && !p.thought);
-      const raw = textParts.map(p => p.text).join('').trim().toUpperCase();
-
-      // Extract the level — look for LOW, MEDIUM, or HIGH anywhere in the response
-      let level = 'LOW';
-      if (raw.includes('HIGH')) level = 'HIGH';
-      else if (raw.includes('MEDIUM')) level = 'MEDIUM';
-      else if (raw.includes('LOW')) level = 'LOW';
-
-      devLog(`  Triage result: ${level} (raw: "${raw}")`, 'success');
-      return { thinkingLevel: level };
-    } catch (err) {
-      devLog(`  Triage failed: ${err.message}, defaulting to LOW`, 'warn');
-      return { thinkingLevel: 'LOW' };
-    }
-  }
-
   // Default agent instructions (the core referee prompt)
   const DEFAULT_AGENT_INSTRUCTIONS = `You are the REFEREE and NARRATOR for a dark, low-fantasy tabletop RPG called Iron & Omens. You are a fair but merciless arbiter of the world. You run the game, roll the dice, and narrate the results — the player simply declares what they want to do.
 
@@ -3751,7 +3657,8 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
     useMtm: true,
     useChatHistory: true,
     memoryOverride: 0,
-    maxToolCalls: 15
+    maxToolCalls: 15,
+    thinkingLevel: 'MEDIUM'
   };
 
   let agentConfig = loadJSON('agentConfig', DEFAULT_AGENT_CONFIG);
@@ -3810,8 +3717,8 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
 
   /** Main agent loop — calls Gemini with tools, loops on function calls until final text */
   async function runAgent(messages) {
-    const triage = await triageAction(messages);
-    devLog(`Triage: thinkingLevel=${triage.thinkingLevel}`, 'info');
+    const agentThinking = agentConfig.thinkingLevel || 'MEDIUM';
+    devLog(`Agent thinking level: ${agentThinking}`, 'info');
 
     const systemPrompt = buildAgentSystemPrompt(messages);
     const effectiveMemory = agentConfig.memoryOverride > 0 ? agentConfig.memoryOverride : memoryDepth;
@@ -3855,18 +3762,9 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
       // Add tools
       body.tools = [{ functionDeclarations: AGENT_TOOL_DECLARATIONS }];
 
-      // Set thinking level based on triage
-      const modelInfo = AVAILABLE_MODELS.find(m => m.id === selectedModel);
-      if (modelInfo && modelInfo.thinking === 'level') {
-        body.generationConfig = { thinkingConfig: { thinkingLevel: triage.thinkingLevel } };
-        devLog(`  Thinking: level=${triage.thinkingLevel}`, 'info');
-      } else if (modelInfo && modelInfo.thinking === 'budget') {
-        // Map level names to budget values for budget-based models
-        const budgetMap = { 'MINIMAL': 128, 'LOW': 1024, 'MEDIUM': 4096, 'HIGH': 12288 };
-        const budget = budgetMap[triage.thinkingLevel] || 1024;
-        body.generationConfig = { thinkingConfig: { thinkingBudget: budget } };
-        devLog(`  Thinking: budget=${budget} (mapped from ${triage.thinkingLevel})`, 'info');
-      }
+      // Set thinking level from agent config preset
+      body.generationConfig = { thinkingConfig: { thinkingLevel: agentThinking } };
+      devLog(`  Thinking: level=${agentThinking}`, 'info');
 
       devLog(`  API: model=${selectedModel}, ${contents.length} content blocks`, 'info');
       devLogDetail(`  Request body`, JSON.stringify(body, null, 2), 'info');
@@ -3966,6 +3864,8 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
     if (memEl) agentConfig.memoryOverride = parseInt(memEl.value) || 0;
     const maxEl = panel.querySelector('#agentMaxTools');
     if (maxEl) agentConfig.maxToolCalls = Math.min(parseInt(maxEl.value) || 15, 25);
+    const thinkEl = panel.querySelector('#agentThinkingLevel');
+    if (thinkEl) agentConfig.thinkingLevel = thinkEl.value;
     agentPersist();
   }
 
@@ -3987,6 +3887,12 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
           <label class="pipeline-toggle-item"><input type="checkbox" id="agentUseHistory" ${agentConfig.useChatHistory !== false ? 'checked' : ''} onchange="agentSave()"> Chat History</label>
           <label class="pipeline-toggle-item" title="Override memory depth (0 = use global setting)">Mem: <input type="number" id="agentMemoryOverride" min="0" max="200" value="${agentConfig.memoryOverride || 0}" onchange="agentSave()" style="width:48px; background:var(--gray-dark); color:var(--white); border:1px solid var(--gray-mid); border-radius:3px; padding:2px 4px; font-size:0.75rem;"></label>
           <label class="pipeline-toggle-item" title="Maximum tool calls per message (safety limit)">Max tools: <input type="number" id="agentMaxTools" min="1" max="25" value="${agentConfig.maxToolCalls || 15}" onchange="agentSave()" style="width:48px; background:var(--gray-dark); color:var(--white); border:1px solid var(--gray-mid); border-radius:3px; padding:2px 4px; font-size:0.75rem;"></label>
+          <label class="pipeline-toggle-item" title="Thinking level for the agent's API calls">Thinking: <select id="agentThinkingLevel" onchange="agentSave()" style="background:var(--gray-dark); color:var(--white); border:1px solid var(--gray-mid); border-radius:3px; padding:2px 4px; font-size:0.75rem;">
+            <option value="MINIMAL" ${agentConfig.thinkingLevel === 'MINIMAL' ? 'selected' : ''}>Minimal</option>
+            <option value="LOW" ${agentConfig.thinkingLevel === 'LOW' ? 'selected' : ''}>Low</option>
+            <option value="MEDIUM" ${(agentConfig.thinkingLevel || 'MEDIUM') === 'MEDIUM' ? 'selected' : ''}>Medium</option>
+            <option value="HIGH" ${agentConfig.thinkingLevel === 'HIGH' ? 'selected' : ''}>High</option>
+          </select></label>
         </div>
       </div>
       <div style="margin-top:8px; padding:8px; background:var(--gray-dark); border:1px solid var(--gray-mid); border-radius:5px; font-size:0.75rem; color:var(--gray-text);">
