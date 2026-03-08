@@ -1276,6 +1276,28 @@
         <span class="api-status disconnected" id="apiStatus">No key</span>
         <hr class="settings-divider">
         <div>
+          <div class="settings-label">Model</div>
+          <select id="modelSelect" onchange="saveModelSelection()" style="width:100%; padding:8px; background:var(--gray-darkest); border:1px solid var(--gray-light); border-radius:6px; color:var(--gray-bright); font-size:0.85rem;">
+          </select>
+          <div class="settings-hint">Choose which Gemini model to use. Newer models cost more but produce better results.</div>
+        </div>
+        <div id="thinkingConfig" style="display:none; margin-top:8px;">
+          <div class="settings-label">Thinking Level</div>
+          <select id="thinkingLevelSelect" onchange="saveThinkingConfig()" style="width:100%; padding:8px; background:var(--gray-darkest); border:1px solid var(--gray-light); border-radius:6px; color:var(--gray-bright); font-size:0.85rem;">
+            <option value="MINIMAL">Minimal (fastest, cheapest)</option>
+            <option value="LOW">Low</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="HIGH">High (best reasoning, most expensive)</option>
+          </select>
+          <div class="settings-hint">Controls how much the model reasons before answering. Higher = better quality, slower, costs more.</div>
+        </div>
+        <div id="thinkingBudgetConfig" style="display:none; margin-top:8px;">
+          <div class="settings-label">Thinking Budget (tokens)</div>
+          <input type="number" id="thinkingBudgetInput" min="-1" max="24576" value="0" onchange="saveThinkingConfig()" style="width:100%; padding:8px; background:var(--gray-darkest); border:1px solid var(--gray-light); border-radius:6px; color:var(--gray-bright); font-size:0.85rem;">
+          <div class="settings-hint">0 = thinking off, -1 = dynamic (model decides), or set a specific token count (e.g. 1024, 2048).</div>
+        </div>
+        <hr class="settings-divider">
+        <div>
           <div class="settings-label">Overall Memory (messages)</div>
           <input type="number" id="memoryDepthInput" min="4" max="500" value="40" placeholder="40"
             onchange="saveMemoryDepth()">
@@ -1723,7 +1745,17 @@
 - When the player enters a new hex, briefly describe the terrain and any visible landmarks or points of interest.`;
   let systemInstructions = loadJSON('systemInstructions', DEFAULT_SYSTEM_INSTRUCTIONS);
 
-  const MODEL = 'gemini-2.0-flash-lite';
+  // ─── Model Selection ───
+  const AVAILABLE_MODELS = [
+    { id: 'gemini-2.5-flash-lite', name: '2.5 Flash Lite', thinking: false },
+    { id: 'gemini-2.5-flash', name: '2.5 Flash', thinking: 'budget' },
+    { id: 'gemini-3.1-flash-lite-preview', name: '3.1 Flash Lite (Preview)', thinking: 'level' }
+  ];
+  const THINKING_LEVELS = ['MINIMAL', 'LOW', 'MEDIUM', 'HIGH'];
+
+  let selectedModel = loadJSON('selectedModel', 'gemini-2.5-flash-lite');
+  let thinkingLevel = loadJSON('thinkingLevel', 'MINIMAL');
+  let thinkingBudget = loadJSON('thinkingBudget', 0); // 0 = off, -1 = dynamic, >0 = token count
 
   // ─── Side Panel Toggle ───
   let activePanel = null;
@@ -1781,6 +1813,55 @@
       el.className = 'api-status disconnected';
     }
   }
+
+  function initModelSelector() {
+    const select = document.getElementById('modelSelect');
+    select.innerHTML = '';
+    for (const m of AVAILABLE_MODELS) {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.name;
+      if (m.id === selectedModel) opt.selected = true;
+      select.appendChild(opt);
+    }
+    updateThinkingUI();
+  }
+
+  function saveModelSelection() {
+    selectedModel = document.getElementById('modelSelect').value;
+    saveJSON('selectedModel', selectedModel);
+    updateThinkingUI();
+    devLog(`Model changed to: ${selectedModel}`, 'info');
+  }
+
+  function updateThinkingUI() {
+    const modelInfo = AVAILABLE_MODELS.find(m => m.id === selectedModel);
+    const levelDiv = document.getElementById('thinkingConfig');
+    const budgetDiv = document.getElementById('thinkingBudgetConfig');
+
+    if (modelInfo && modelInfo.thinking === 'level') {
+      levelDiv.style.display = 'block';
+      budgetDiv.style.display = 'none';
+      document.getElementById('thinkingLevelSelect').value = thinkingLevel;
+    } else if (modelInfo && modelInfo.thinking === 'budget') {
+      levelDiv.style.display = 'none';
+      budgetDiv.style.display = 'block';
+      document.getElementById('thinkingBudgetInput').value = thinkingBudget;
+    } else {
+      levelDiv.style.display = 'none';
+      budgetDiv.style.display = 'none';
+    }
+  }
+
+  function saveThinkingConfig() {
+    thinkingLevel = document.getElementById('thinkingLevelSelect').value;
+    thinkingBudget = parseInt(document.getElementById('thinkingBudgetInput').value) || 0;
+    saveJSON('thinkingLevel', thinkingLevel);
+    saveJSON('thinkingBudget', thinkingBudget);
+    devLog(`Thinking config updated — level: ${thinkingLevel}, budget: ${thinkingBudget}`, 'info');
+  }
+
+  initModelSelector();
 
   function saveMemoryDepth() {
     const val = parseInt(document.getElementById('memoryDepthInput').value);
@@ -2245,9 +2326,21 @@
       devLogDetail(`  Full systemInstruction payload`, fullSystemText, 'header');
     }
 
-    devLog(`API Request: Sending ${contents.length} history messages (memory depth: ${effectiveMemory}${customMemoryDepth > 0 ? ' [override]' : ''}) + System Context`, 'info');
-    
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+    // Add thinking config if the model supports it
+    const modelInfo = AVAILABLE_MODELS.find(m => m.id === selectedModel);
+    if (modelInfo && modelInfo.thinking === 'level') {
+      body.generationConfig = { thinkingConfig: { thinkingLevel: thinkingLevel } };
+      devLog(`  Thinking: level=${thinkingLevel}`, 'info');
+    } else if (modelInfo && modelInfo.thinking === 'budget' && thinkingBudget !== 0) {
+      body.generationConfig = { thinkingConfig: { thinkingBudget: thinkingBudget } };
+      devLog(`  Thinking: budget=${thinkingBudget}`, 'info');
+    }
+
+    devLog(`API Request: model=${selectedModel}, ${contents.length} msgs (mem ${effectiveMemory}${customMemoryDepth > 0 ? ' [override]' : ''})`, 'info');
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
+
+    devLogDetail(`  Full API request body`, JSON.stringify(body, null, 2), 'info');
 
     const res = await fetch(url, {
       method: 'POST',
@@ -2257,19 +2350,28 @@
 
     if (!res.ok) {
       const errBody = await res.text();
+      devLogDetail(`  API Error Response`, errBody, 'error');
       let detail = '';
       try { detail = JSON.parse(errBody).error.message; } catch { detail = errBody; }
       throw new Error(`API ${res.status}: ${detail}`);
     }
 
     const data = await res.json();
+    devLogDetail(`  Full API response`, JSON.stringify(data, null, 2), 'success');
     const candidate = data.candidates && data.candidates[0];
     if (!candidate || !candidate.content || !candidate.content.parts) {
       throw new Error('No response from model.');
     }
 
-    devLog(`API Request: Success`, 'success');
-    return candidate.content.parts.map(p => p.text).join('');
+    // Extract text parts only (skip thinking parts if present)
+    const textParts = candidate.content.parts.filter(p => p.text !== undefined && !p.thought);
+    const thoughtParts = candidate.content.parts.filter(p => p.thought);
+    if (thoughtParts.length > 0) {
+      devLogDetail(`  Model thinking`, thoughtParts.map(p => p.text).join(''), 'info');
+    }
+
+    devLog(`API Response: Success (${textParts.reduce((a,p) => a + (p.text||'').length, 0)} chars)`, 'success');
+    return textParts.map(p => p.text).join('');
   }
 
   // ─── Lorebook ───
@@ -2633,19 +2735,25 @@ Updated State:`;
       devLogDetail(`Playstate: Full prompt sent to AI`, promptText, 'info');
 
       const contents = [{ role: 'user', parts: [{ text: promptText }] }];
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
+      devLog(`Playstate: API Request to ${selectedModel}...`, 'info');
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents })
       });
 
-      if (!res.ok) throw new Error('API error ' + res.status);
+      if (!res.ok) {
+        const errBody = await res.text();
+        devLogDetail(`Playstate: API Error Response`, errBody, 'error');
+        throw new Error('API error ' + res.status);
+      }
       const result = await res.json();
+      devLogDetail(`Playstate: Full API Response`, JSON.stringify(result, null, 2), 'success');
       const candidate = result.candidates && result.candidates[0];
       if (!candidate || !candidate.content || !candidate.content.parts) throw new Error('No state returned');
 
-      let newState = candidate.content.parts.map(p => p.text).join('').trim();
+      let newState = candidate.content.parts.filter(p => p.text !== undefined && !p.thought).map(p => p.text).join('').trim();
       devLogDetail(`Playstate: AI returned new state`, newState, 'success');
 
       // Strip markdown code block if present
@@ -2949,22 +3057,29 @@ If there is no new lore to extract or update, just return an empty array [] insi
         devLog(`MTM: Lore auto-extraction enabled. Appending system instructions & recent context (${allMsgs.slice(exitEnd).length} msgs).`, 'info');
       }
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
+      devLogDetail(`MTM: Full prompt sent to AI`, prompt, 'info');
+      devLog(`MTM: API Request to ${selectedModel}...`, 'info');
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
 
-      if (!res.ok) throw new Error('API error ' + res.status);
+      if (!res.ok) {
+        const errBody = await res.text();
+        devLogDetail(`MTM: API Error Response`, errBody, 'error');
+        throw new Error('API error ' + res.status);
+      }
 
       const result = await res.json();
+      devLogDetail(`MTM: Full API Response`, JSON.stringify(result, null, 2), 'success');
       const candidate = result.candidates && result.candidates[0];
       if (!candidate || !candidate.content || !candidate.content.parts) {
         throw new Error('No summary returned');
       }
 
-      let rawOutput = candidate.content.parts.map(p => p.text).join('');
+      let rawOutput = candidate.content.parts.filter(p => p.text !== undefined && !p.thought).map(p => p.text).join('');
       devLogDetail(`MTM: Raw AI Response`, rawOutput, 'info');
       let finalSummary = rawOutput;
 
@@ -3338,9 +3453,9 @@ If there is no new lore to extract or update, just return an empty array [] insi
     
     for (const tbl of randomTables) {
       if (!tbl.enabled || !tbl.command) continue;
-      // Case-insensitive match of the command word
+      // Case-insensitive match of the command as a whole word (not as substring of longer commands)
       const cmd = tbl.command;
-      const regex = new RegExp(cmd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      const regex = new RegExp(cmd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![A-Za-z])', 'gi');
       let match;
       // Process from end to start to preserve indices
       const matches = [];
@@ -3579,7 +3694,7 @@ If there is no new lore to extract or update, just return an empty array [] insi
       flow.innerHTML += `
         <div class="pipeline-node" data-id="${pass.id}">
           <div class="pipeline-pass-header">
-            <span class="pipeline-pass-title">Pass ${i + 1}</span>
+            <span class="pipeline-pass-title">Pass ${i + 1}${pass.name ? ': ' + escapeHtml(pass.name) : ''}</span>
             <button class="pipeline-pass-remove" onclick="pipelineRemovePass('${pass.id}')" title="Remove pass">&times;</button>
           </div>
           <textarea class="pipe-instructions" placeholder="Instructions for this pass..." onchange="pipelineSave()">${escapeHtml(pass.instructions)}</textarea>
@@ -3694,6 +3809,15 @@ If there is no new lore to extract or update, just return an empty array [] insi
 
   // Initialize table file handle on load
   initTableFileHandle();
+
+  // Startup log
+  devLog(`═══ App Initialized ═══`, 'header');
+  devLog(`Model: ${selectedModel}`, 'info');
+  devLog(`Tables: ${randomTables.length} loaded (${randomTables.filter(t=>t.enabled).length} enabled)`, 'info');
+  devLog(`Pipeline: ${pipeline.passes.length} intermediate passes + final`, 'info');
+  devLog(`Lorebook: ${lorebook.length} entries`, 'info');
+  devLog(`Memory: ${memoryDepth} messages`, 'info');
+  devLog(`Active chat: ${activeChatId || 'none'}`, 'info');
 </script>
 
 </body>
