@@ -2381,12 +2381,8 @@
   let loreAutoExtractEnabled = loadJSON('loreAutoExtract', true);
   let editingLoreId = null;
 
-  document.getElementById('loreGlobalToggle').checked = loreGlobalEnabled;
-  document.getElementById('loreAutoExtractToggle').checked = loreAutoExtractEnabled;
-  document.getElementById('tableGlobalToggle').checked = tableGlobalEnabled;
-  document.getElementById('systemInstructionsInput').value = systemInstructions;
-  renderLorebook();
-  renderPlaystate();
+  // NOTE: renderLorebook() and renderPlaystate() are called later, after all let declarations,
+  // to avoid temporal dead zone errors (playstateEnabled, etc.).
 
   function lorePersist() {
     saveJSON('lorebook', lorebook);
@@ -3806,6 +3802,15 @@ If there is no new lore to extract or update, just return an empty array [] insi
       devLog('Copied to clipboard (fallback).', 'success');
     });
   }
+
+  // ─── Deferred Initialization ───
+  // These must run after ALL let/const declarations to avoid temporal dead zone errors.
+  document.getElementById('loreGlobalToggle').checked = loreGlobalEnabled;
+  document.getElementById('loreAutoExtractToggle').checked = loreAutoExtractEnabled;
+  document.getElementById('tableGlobalToggle').checked = tableGlobalEnabled;
+  document.getElementById('systemInstructionsInput').value = systemInstructions;
+  renderLorebook();
+  renderPlaystate();
 
   // Initialize table file handle on load
   initTableFileHandle();
