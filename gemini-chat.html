@@ -2136,8 +2136,9 @@
     
     const container = document.getElementById('messages').children[idx];
     const contentDiv = container.querySelector('div');
+    const currentHeight = contentDiv.offsetHeight;
     contentDiv.innerHTML = `
-      <textarea style="width:100%; min-height:80px; background:var(--gray-darkest); color:var(--white); border:1px solid var(--red-accent); padding:8px; border-radius:6px; font-family:inherit; resize:vertical;">${escapeHtml(msg.text)}</textarea>
+      <textarea style="width:100%; min-height:${Math.max(80, currentHeight)}px; box-sizing:border-box; background:var(--gray-darkest); color:var(--white); border:1px solid var(--red-accent); padding:8px; border-radius:6px; font-family:inherit; resize:vertical;">${escapeHtml(msg.text)}</textarea>
       <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
         <button class="msg-btn" onclick="renderMessages()" style="background:var(--gray-mid); padding:4px 12px; border-radius:4px; font-size:0.8rem;">Cancel</button>
         <button class="msg-btn" onclick="saveEdit(${idx}, this)" style="background:var(--red-dark); padding:4px 12px; border-radius:4px; color:white; font-size:0.8rem;">Save</button>
@@ -2907,13 +2908,26 @@ Updated State:`;
     const chat = chats[activeChatId];
     const totalMsgs = chat.messages.filter(m => m.role === 'user' || m.role === 'assistant').length;
 
-    let data = mtmData[activeChatId] || { summary: '', lastSummarizedIndex: 0 };
-    if (data.lastTotalMsgs === undefined) data.lastTotalMsgs = totalMsgs;
+    let data = mtmData[activeChatId];
+    let needsSave = false;
+    if (!data) {
+      data = { summary: '', lastSummarizedIndex: 0, counter: 0 };
+      needsSave = true;
+    }
+
+    if (data.lastTotalMsgs === undefined) {
+      data.lastTotalMsgs = totalMsgs;
+      needsSave = true;
+    }
     
     const delta = totalMsgs - data.lastTotalMsgs;
     if (delta !== 0) {
       if (delta > 0) data.counter = (data.counter || 0) + delta;
       data.lastTotalMsgs = totalMsgs;
+      needsSave = true;
+    }
+
+    if (needsSave) {
       mtmData[activeChatId] = data;
       mtmPersist();
     }
