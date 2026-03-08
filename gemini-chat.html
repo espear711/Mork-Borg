@@ -2554,7 +2554,8 @@
   let playstateData = loadJSON('playstateData', {});
   let playstateUpdating = false;
 
-  const DEFAULT_PLAYSTATE_PROMPT = `You are tracking a character sheet and world state for Iron & Omens. Update ALL fields based on what happened in the conversation. Rules:
+  const DEFAULT_PLAYSTATE_PROMPT = `You are tracking a character sheet and world state for Iron & Omens. Update ALL fields based on what the ASSISTANT actually narrated or confirmed in the conversation. Rules:
+- CRITICAL: Only update the state based on what the Assistant's responses ACTUALLY DID. If the user requests something (e.g. "give me a feat") but the Assistant refused or ignored it, do NOT add it to the state. The Assistant's narration is the sole authority on what happened.
 - HP cannot exceed Max HP. Damage = incoming - DR (minimum 0).
 - Depletion: mark a dot when rules say to (weapon on attack fumble, armor on defense fumble or enemy crit, ammo at end of combat, etc.). 3 dots = item destroyed. Show dots as [X] filled, [O] empty.
 - Inventory slots: each item = 1 slot unless noted. Armor slots: Light=1, Medium=3, Heavy=6. Shield=1, Helmet=1. 100 coins = 1 slot.
@@ -2563,7 +2564,7 @@
 - Track current hex, terrain type, day number, current watch (1-6), and watches traveled today.
 - When the character moves to a new hex, update position. If they used a travel watch, increment watches traveled.
 - Track active conditions (encumbered, dazed, starving, sleep-deprived, etc.).
-- Do NOT invent items, gold, HP, or Omens the player didn't earn. Only update what actually changed.
+- Do NOT invent items, gold, HP, Omens, or feats the player didn't earn. Only update what the Assistant actually confirmed happened.
 - Keep the format exactly as shown — do not add or remove sections.`;
 
   const DEFAULT_PLAYSTATE_STATE = `=== CHARACTER ===
@@ -3737,6 +3738,7 @@ Write in second person ("You charge forward...").
 - End with a moment that invites the player to act. Present meaningful choices when appropriate.
 - Keep responses focused: 2-4 paragraphs for simple actions, longer for complex scenes or combat.
 - Do not break character. Do not explain mechanics unless asked.
+- NEVER write meta-commentary about what you "need to roll" or "should do next." If you need to roll, USE the roll_dice tool — do not narrate your intent to roll. Every response must be either a tool call or finished narrative prose, never a note-to-self.
 
 === TONE ===
 Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories matter. Beauty exists but it is fragile and often hiding something worse.`;
