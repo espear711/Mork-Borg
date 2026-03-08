@@ -3827,11 +3827,20 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
       contents = contents.slice(1);
     }
 
-    const maxIterations = agentConfig.maxToolCalls || 15;
+    const HARD_ITERATION_LIMIT = 25; // absolute ceiling — never exceed regardless of config
+    const AGENT_TIMEOUT_MS = 120_000; // 2 minute wall-clock timeout for entire agent run
+    const maxIterations = Math.min(agentConfig.maxToolCalls || 15, HARD_ITERATION_LIMIT);
+    const agentStartTime = Date.now();
     let iteration = 0;
 
     while (iteration < maxIterations) {
       iteration++;
+
+      // Wall-clock safety check
+      if (Date.now() - agentStartTime > AGENT_TIMEOUT_MS) {
+        throw new Error(`Agent timed out after ${Math.round(AGENT_TIMEOUT_MS / 1000)}s and ${iteration - 1} iteration(s). The model may be stuck or the API is responding slowly.`);
+      }
+
       devLog(`── Agent iteration ${iteration}/${maxIterations} ──`, 'header');
 
       // Build request body
@@ -3954,7 +3963,7 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
     const memEl = panel.querySelector('#agentMemoryOverride');
     if (memEl) agentConfig.memoryOverride = parseInt(memEl.value) || 0;
     const maxEl = panel.querySelector('#agentMaxTools');
-    if (maxEl) agentConfig.maxToolCalls = parseInt(maxEl.value) || 15;
+    if (maxEl) agentConfig.maxToolCalls = Math.min(parseInt(maxEl.value) || 15, 25);
     agentPersist();
   }
 
@@ -3975,7 +3984,7 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
           <label class="pipeline-toggle-item"><input type="checkbox" id="agentUseMtm" ${agentConfig.useMtm !== false ? 'checked' : ''} onchange="agentSave()"> Mid-term Memory</label>
           <label class="pipeline-toggle-item"><input type="checkbox" id="agentUseHistory" ${agentConfig.useChatHistory !== false ? 'checked' : ''} onchange="agentSave()"> Chat History</label>
           <label class="pipeline-toggle-item" title="Override memory depth (0 = use global setting)">Mem: <input type="number" id="agentMemoryOverride" min="0" max="200" value="${agentConfig.memoryOverride || 0}" onchange="agentSave()" style="width:48px; background:var(--gray-dark); color:var(--white); border:1px solid var(--gray-mid); border-radius:3px; padding:2px 4px; font-size:0.75rem;"></label>
-          <label class="pipeline-toggle-item" title="Maximum tool calls per message (safety limit)">Max tools: <input type="number" id="agentMaxTools" min="1" max="50" value="${agentConfig.maxToolCalls || 15}" onchange="agentSave()" style="width:48px; background:var(--gray-dark); color:var(--white); border:1px solid var(--gray-mid); border-radius:3px; padding:2px 4px; font-size:0.75rem;"></label>
+          <label class="pipeline-toggle-item" title="Maximum tool calls per message (safety limit)">Max tools: <input type="number" id="agentMaxTools" min="1" max="25" value="${agentConfig.maxToolCalls || 15}" onchange="agentSave()" style="width:48px; background:var(--gray-dark); color:var(--white); border:1px solid var(--gray-mid); border-radius:3px; padding:2px 4px; font-size:0.75rem;"></label>
         </div>
       </div>
       <div style="margin-top:8px; padding:8px; background:var(--gray-dark); border:1px solid var(--gray-mid); border-radius:5px; font-size:0.75rem; color:var(--gray-text);">
