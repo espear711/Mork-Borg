@@ -2059,13 +2059,15 @@
       // Run intermediate passes
       for (let i = 0; i < passes.length; i++) {
         devLog(`── Pipeline Pass ${i + 1}/${passes.length} ──`, 'header');
-        devLog(`  Lorebook: ${passes[i].useLorebook ? 'ON' : 'OFF'} | MTM: ${passes[i].useMtm ? 'ON' : 'OFF'} | History: ${passes[i].useChatHistory ? 'ON' : 'OFF'} | Memory: ${passes[i].memoryOverride || 'global'}`, 'info');
+        devLog(`  Rules: ${passes[i].useRules !== false ? 'ON' : 'OFF'} | Playstate: ${passes[i].usePlaystate !== false ? 'ON' : 'OFF'} | Lorebook: ${passes[i].useLorebook ? 'ON' : 'OFF'} | MTM: ${passes[i].useMtm ? 'ON' : 'OFF'} | History: ${passes[i].useChatHistory ? 'ON' : 'OFF'} | Memory: ${passes[i].memoryOverride || 'global'}`, 'info');
         const pass = passes[i];
         const extraSystem = buildPassSystemPrompt(pass.instructions, passResults, i);
         let result = await callGemini(chat.messages, {
           useLorebook: pass.useLorebook,
           useMtm: pass.useMtm,
           useChatHistory: pass.useChatHistory,
+          useRules: pass.useRules !== false,
+          usePlaystate: pass.usePlaystate !== false,
           extraSystem,
           customMemoryDepth: pass.memoryOverride || 0
         });
@@ -2083,7 +2085,7 @@
 
       // Final pass
       devLog(`── Final Pass ──`, 'header');
-      devLog(`  Lorebook: ${pipeline.finalUseLore !== false ? 'ON' : 'OFF'} | MTM: ${pipeline.finalUseMtm !== false ? 'ON' : 'OFF'} | History: ${pipeline.finalUseHistory !== false ? 'ON' : 'OFF'} | Memory: ${pipeline.finalMemoryOverride || 'global'}`, 'info');
+      devLog(`  Rules: ${pipeline.finalUseRules !== false ? 'ON' : 'OFF'} | Playstate: ${pipeline.finalUsePlaystate !== false ? 'ON' : 'OFF'} | Lorebook: ${pipeline.finalUseLore !== false ? 'ON' : 'OFF'} | MTM: ${pipeline.finalUseMtm !== false ? 'ON' : 'OFF'} | History: ${pipeline.finalUseHistory !== false ? 'ON' : 'OFF'} | Memory: ${pipeline.finalMemoryOverride || 'global'}`, 'info');
       const finalExtra = buildPassSystemPrompt(
         pipeline.finalInstructions || '',
         passResults,
@@ -2093,6 +2095,8 @@
         useLorebook: pipeline.finalUseLore !== false,
         useMtm: pipeline.finalUseMtm !== false,
         useChatHistory: pipeline.finalUseHistory !== false,
+        useRules: pipeline.finalUseRules !== false,
+        usePlaystate: pipeline.finalUsePlaystate !== false,
         extraSystem: finalExtra,
         customMemoryDepth: pipeline.finalMemoryOverride || 0
       });
@@ -2235,7 +2239,7 @@
 
   // ─── Gemini API Call ───
   async function callGemini(messages, opts = {}) {
-    const { useLorebook = true, useMtm = true, useChatHistory = true, extraSystem = '', customMemoryDepth = 0 } = opts;
+    const { useLorebook = true, useMtm = true, useChatHistory = true, useRules = true, usePlaystate = true, extraSystem = '', customMemoryDepth = 0 } = opts;
     const effectiveMemory = customMemoryDepth > 0 ? customMemoryDepth : memoryDepth;
 
     // Build the contents array
@@ -2256,19 +2260,27 @@
     }
 
     // Gather context based on toggles
+    // Order: Pass Instructions FIRST (identity/role), then reference material
     const systemParts = [];
     let injectionOrder = 1;
     devLog(`── Building System Context ──`, 'header');
 
-    if (systemInstructions.trim()) {
+    if (extraSystem) {
+      systemParts.push(extraSystem);
+      devLogDetail(`  [${injectionOrder++}] Pipeline Pass Instructions`, extraSystem, 'info');
+    }
+
+    if (useRules && systemInstructions.trim()) {
       const part = systemInstructions.trim();
       systemParts.push(part);
-      devLogDetail(`  [${injectionOrder++}] System Instructions`, part, 'info');
+      devLogDetail(`  [${injectionOrder++}] System Instructions (Rules)`, part, 'info');
+    } else if (!useRules) {
+      devLog(`  [skip] System Instructions — disabled for this call`, 'warn');
     } else {
       devLog(`  [skip] System Instructions — empty`, 'warn');
     }
 
-    if (playstateEnabled) {
+    if (usePlaystate && playstateEnabled) {
       const currentPlaystate = getPlaystateForChat();
       if (currentPlaystate && currentPlaystate.state) {
         const part = '[Current Playstate — This is the current state of the game/character. Use this to inform your response.]\n' + currentPlaystate.state;
@@ -2277,8 +2289,10 @@
       } else {
         devLog(`  [skip] Playstate — no state data for this chat`, 'warn');
       }
+    } else if (!usePlaystate) {
+      devLog(`  [skip] Playstate — disabled for this call`, 'warn');
     } else {
-      devLog(`  [skip] Playstate — disabled`, 'warn');
+      devLog(`  [skip] Playstate — disabled globally`, 'warn');
     }
 
     if (useMtm) {
@@ -2304,11 +2318,6 @@
       }
     } else {
       devLog(`  [skip] Lorebook — disabled for this call`, 'warn');
-    }
-
-    if (extraSystem) {
-      systemParts.push(extraSystem);
-      devLogDetail(`  [${injectionOrder++}] Pipeline Pass Instructions`, extraSystem, 'info');
     }
 
     const body = { contents };
@@ -3591,22 +3600,22 @@ If there is no new lore to extract or update, just return an empty array [] insi
     passes: [
       {
         id: 'pass_assess', name: 'Assess & Plan',
-        instructions: 'You are the PLANNING layer of a multi-pass RPG referee pipeline. Analyze the player\'s action and determine:\n1. What game procedures apply (combat, skill test, travel, social, rest, shopping, etc.).\n2. For each procedure, list the exact mechanic: which ability, DC, damage dice, depletion checks, resource costs.\n3. If a random encounter or table roll is needed, embed the appropriate !Command (e.g. !Monster, !Weather, !DungeonEvent). Do NOT narrate — only output a structured action plan.\n4. Note any lorebook entries, NPCs, or hex locations that should be referenced.\n\nOutput format:\n[ACTION PLAN]\n- Procedure: ...\n- Mechanic: ...\n- Tables needed: !Command\n- NPCs/Lore relevant: ...',
-        useLorebook: false, useMtm: false, useChatHistory: true, memoryOverride: 10
+        instructions: 'You are a GAME PROCEDURE ANALYZER for a tabletop RPG called Iron & Omens. Given the player\'s action, identify which game mechanics apply and output a structured plan. Do NOT narrate or write prose.\n\nAnalyze the player\'s action and determine:\n1. What game procedures apply (combat, skill test, travel, social, rest, shopping, etc.).\n2. For each procedure, list the exact mechanic: which ability, DC, damage dice, depletion checks, resource costs.\n3. If a random encounter or table roll is needed, embed the appropriate !Command (e.g. !Monster, !Weather, !DungeonEvent).\n4. Note any lorebook entries, NPCs, or hex locations that should be referenced.\n\nRefer to the game rules and current playstate provided below.\n\nOutput format:\n[ACTION PLAN]\n- Procedure: ...\n- Mechanic: ...\n- Tables needed: !Command\n- NPCs/Lore relevant: ...',
+        useRules: true, usePlaystate: true, useLorebook: false, useMtm: false, useChatHistory: true, memoryOverride: 10
       },
       {
         id: 'pass_rules', name: 'Rules Check',
-        instructions: 'You are the RULES CHECKER layer. You receive an action plan from a prior pass. Your job:\n1. Verify every mechanic against the Iron & Omens rules in System Instructions (HD, DR, DC values, ability modifiers, depletion triggers, omen costs).\n2. Resolve any dice rolls mentioned: state the formula, roll result, and outcome (success/fail/crit/fumble). Players roll everything — monsters never roll.\n3. Check inventory slot limits (STR+8), depletion rules, and resource tracking.\n4. Correct any errors in the plan. Output the VALIDATED action plan with resolved rolls and outcomes.\n\nOutput format:\n[RULES VALIDATED]\n- Action: ... → Roll: d20+STR(+2) vs DC 12 = 17 → Hit, d6+2 = 5 dmg\n- Depletion: weapon crit? No. Armor hit? Mark depletion.\n- Resources: 1 ration consumed, 3 remaining.',
-        useLorebook: true, useMtm: false, useChatHistory: true, memoryOverride: 6
+        instructions: 'You are a RULES VALIDATOR for a tabletop RPG. You receive a structured action plan from a prior analysis pass. Verify every mechanic against the game rules, correct errors, and resolve dice outcomes. Do NOT narrate or write prose.\n\nYour job:\n1. Verify every mechanic against the Iron & Omens rules (HD, DR, DC values, ability modifiers, depletion triggers, omen costs).\n2. Resolve any dice rolls mentioned: state the formula, roll result, and outcome (success/fail/crit/fumble). Players roll everything — monsters never roll.\n3. Check inventory slot limits (STR+8), depletion rules, and resource tracking.\n4. Correct any errors in the plan. Output the VALIDATED action plan with resolved rolls and outcomes.\n\nRefer to the game rules and current playstate provided below.\n\nOutput format:\n[RULES VALIDATED]\n- Action: ... → Roll: d20+STR(+2) vs DC 12 = 17 → Hit, d6+2 = 5 dmg\n- Depletion: weapon crit? No. Armor hit? Mark depletion.\n- Resources: 1 ration consumed, 3 remaining.',
+        useRules: true, usePlaystate: true, useLorebook: false, useMtm: false, useChatHistory: true, memoryOverride: 6
       },
       {
         id: 'pass_world', name: 'World State',
-        instructions: 'You are the WORLD STATE layer. You receive a validated action plan with resolved rolls. Your job:\n1. Determine NPC reactions, morale, and dialogue based on lorebook entries and established personality.\n2. Describe environmental details appropriate to the current hex, terrain, weather, and time of day from Playstate.\n3. Track hex movement: if the party travels, note new hex coordinates and any points of interest.\n4. Track time: note watch advancement, day/night transitions, and rest requirements.\n5. Note any lorebook updates needed (new NPCs met, locations discovered, items gained/lost).\n\nOutput format:\n[WORLD CONTEXT]\n- Environment: ...\n- NPC reactions: ...\n- Time/Hex updates: ...\n- Lore updates needed: ...',
-        useLorebook: true, useMtm: true, useChatHistory: true, memoryOverride: 10
+        instructions: 'You are a WORLD STATE TRACKER for a tabletop RPG. Given a validated action plan with resolved rolls, determine environmental details, NPC reactions, and changes to the game world. Do NOT narrate prose — output structured notes.\n\nYour job:\n1. Determine NPC reactions, morale, and dialogue based on lorebook entries and established personality.\n2. Describe environmental details appropriate to the current hex, terrain, weather, and time of day from Playstate.\n3. Track hex movement: if the party travels, note new hex coordinates and any points of interest.\n4. Track time: note watch advancement, day/night transitions, and rest requirements.\n5. Note any lorebook updates needed (new NPCs met, locations discovered, items gained/lost).\n\nOutput format:\n[WORLD CONTEXT]\n- Environment: ...\n- NPC reactions: ...\n- Time/Hex updates: ...\n- Lore updates needed: ...',
+        useRules: false, usePlaystate: true, useLorebook: true, useMtm: true, useChatHistory: true, memoryOverride: 10
       }
     ],
-    finalInstructions: 'You are the NARRATOR — the final layer of a multi-pass RPG referee pipeline. You receive structured analysis from prior passes (action plans, validated rules, world context). Your job:\n1. Synthesize everything into vivid, immersive prose. Write in second person ("You charge forward...").\n2. Weave in the exact mechanical outcomes (damage dealt, HP lost, items used) naturally into the narrative — do NOT hide numbers, state them clearly.\n3. End with a clear prompt for the player\'s next action. Present meaningful choices when appropriate.\n4. Keep responses focused: 2-4 paragraphs for simple actions, longer for complex scenes.\n5. If any !Commands remain unresolved in prior pass results, embed them in your output for post-processing.\n6. Never contradict the validated rules or world state from prior passes.\n\nTone: Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories matter.',
-    finalUseLore: true, finalUseMtm: true, finalUseHistory: true, finalMemoryOverride: 0
+    finalInstructions: 'You are the NARRATOR for a dark, low-fantasy tabletop RPG called Iron & Omens. You receive structured analysis from prior processing passes (action plans, validated rules, world context). Synthesize everything into vivid, immersive prose.\n\nYour job:\n1. Write in second person ("You charge forward...").\n2. Weave in the exact mechanical outcomes (damage dealt, HP lost, items used) naturally into the narrative — do NOT hide numbers, state them clearly.\n3. End with a clear prompt for the player\'s next action. Present meaningful choices when appropriate.\n4. Keep responses focused: 2-4 paragraphs for simple actions, longer for complex scenes.\n5. If any !Commands remain unresolved in prior pass results, embed them in your output for post-processing.\n6. Never contradict the validated rules or world state from prior passes.\n\nTone: Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories matter.',
+    finalUseRules: false, finalUsePlaystate: true, finalUseLore: true, finalUseMtm: true, finalUseHistory: true, finalMemoryOverride: 0
   };
   let pipeline = loadJSON('pipeline', DEFAULT_PIPELINE);
 
@@ -3617,6 +3626,8 @@ If there is no new lore to extract or update, just return an empty array [] insi
       id: 'pass_' + Date.now(),
       name: 'Pass ' + (pipeline.passes.length + 1),
       instructions: '',
+      useRules: true,
+      usePlaystate: true,
       useLorebook: true,
       useMtm: true,
       useChatHistory: true,
@@ -3648,6 +3659,8 @@ If there is no new lore to extract or update, just return an empty array [] insi
       const node = document.querySelector(`.pipeline-node[data-id="${pass.id}"]`);
       if (!node) continue;
       pass.instructions = node.querySelector('.pipe-instructions').value;
+      pass.useRules = node.querySelector('.pipe-rules').checked;
+      pass.usePlaystate = node.querySelector('.pipe-playstate').checked;
       pass.useLorebook = node.querySelector('.pipe-lore').checked;
       pass.useMtm = node.querySelector('.pipe-mtm').checked;
       pass.useChatHistory = node.querySelector('.pipe-history').checked;
@@ -3657,6 +3670,8 @@ If there is no new lore to extract or update, just return an empty array [] insi
     const finalNode = document.querySelector('.pipeline-node[data-id="final"]');
     if (finalNode) {
       pipeline.finalInstructions = finalNode.querySelector('.pipe-instructions').value;
+      pipeline.finalUseRules = finalNode.querySelector('.pipe-rules').checked;
+      pipeline.finalUsePlaystate = finalNode.querySelector('.pipe-playstate').checked;
       pipeline.finalUseLore = finalNode.querySelector('.pipe-lore').checked;
       pipeline.finalUseMtm = finalNode.querySelector('.pipe-mtm').checked;
       pipeline.finalUseHistory = finalNode.querySelector('.pipe-history').checked;
@@ -3688,6 +3703,8 @@ If there is no new lore to extract or update, just return an empty array [] insi
           </div>
           <textarea class="pipe-instructions" placeholder="Instructions for this pass..." onchange="pipelineSave()">${escapeHtml(pass.instructions)}</textarea>
           <div class="pipeline-toggles">
+            <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-rules" ${pass.useRules !== false ? 'checked' : ''} onchange="pipelineSave()"> Rules</label>
+            <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-playstate" ${pass.usePlaystate !== false ? 'checked' : ''} onchange="pipelineSave()"> Playstate</label>
             <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-lore" ${pass.useLorebook ? 'checked' : ''} onchange="pipelineSave()"> Lorebook</label>
             <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-mtm" ${pass.useMtm ? 'checked' : ''} onchange="pipelineSave()"> Mid-term Memory</label>
             <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-history" ${pass.useChatHistory ? 'checked' : ''} onchange="pipelineSave()"> Chat History</label>
@@ -3708,6 +3725,8 @@ If there is no new lore to extract or update, just return an empty array [] insi
         </div>
         <textarea class="pipe-instructions" placeholder="Instructions for the final response (optional)..." onchange="pipelineSave()">${escapeHtml(pipeline.finalInstructions || '')}</textarea>
         <div class="pipeline-toggles">
+          <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-rules" ${pipeline.finalUseRules !== false ? 'checked' : ''} onchange="pipelineSave()"> Rules</label>
+          <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-playstate" ${pipeline.finalUsePlaystate !== false ? 'checked' : ''} onchange="pipelineSave()"> Playstate</label>
           <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-lore" ${pipeline.finalUseLore !== false ? 'checked' : ''} onchange="pipelineSave()"> Lorebook</label>
           <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-mtm" ${pipeline.finalUseMtm !== false ? 'checked' : ''} onchange="pipelineSave()"> Mid-term Memory</label>
           <label class="pipeline-toggle-item"><input type="checkbox" class="pipe-history" ${pipeline.finalUseHistory !== false ? 'checked' : ''} onchange="pipelineSave()"> Chat History</label>
