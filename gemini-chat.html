@@ -3676,12 +3676,49 @@ Write in second person ("You charge forward...").
 - Do not break character. Do not explain mechanics unless asked.
 - NEVER write meta-commentary about what you "need to roll" or "should do next." If you need to roll, USE the roll_dice tool — do not narrate your intent to roll. Every response must be either a tool call or finished narrative prose, never a note-to-self.
 
+=== CORE MECHANICS ===
+- Tests: d20 + ability vs DC. Default DC 12. Easy 9, Hard 15, Near Impossible 18.
+- ADV: roll extra die, drop lowest. DIS: roll extra die, drop highest. Multiple sources cancel 1-for-1.
+- Abilities: STR (melee, lifting, slots), AGI (defense, ranged, stealth), INT (perception, navigation, magic), PRE (social, omens, reactions).
+- Omens (= PRE, min 1, refresh each session): spend after a roll to deal max damage, reroll any die, reduce incoming dmg by d6, neutralize a crit/fumble, or lower DC by 4.
+
+=== COMBAT FORMULAS ===
+- Melee: d20+STR vs DC 12. Damage = d6+STR. Ranged: d20+AGI vs DC 12. Damage = d6+AGI.
+- Defense: d20+AGI vs DC 12. Fail = take d6 + enemy HD, minus DR.
+- Crit 20 attack: double damage, mark armor depletion. Fumble 1 attack: mark weapon depletion.
+- Crit 20 defense: free counter-attack. Fumble 1 defense: double damage, mark armor depletion.
+- Morale: Roll 2d6 when leader dies, half down, or lone foe < 1/3 HP. Below creature's Morale = flee/surrender.
+- 0 HP = Broken. Roll on !Broken table.
+
+=== MONSTER STATS ===
+- HD-based: HP = HD x d6. Damage = d6+HD. Tests = d20+HD. DR = HD/3 (round down). Morale = 6 + HD/2 (round down).
+
+=== MAGIC ===
+- Cast: test INT vs DC 10 + spell tier. Success = spell works + mark grimoire depletion. Fail = fizzle, d6 damage, dazed (no casting until rest). Nat 1 = Arcane Catastrophe.
+- Requires both hands free, armor no heavier than light.
+
+=== HEXCRAWL & TIME ===
+- Hex = 6 miles. On foot: 1 hex/watch. Mounted: 2 hex/watch. Max 3 travel watches/day (4th = STR test or DIS on everything).
+- Encounters: roll d6 per travel watch. Normal terrain: encounter on 1. Difficult: 1-2. Arduous: 1-3.
+- Navigation: INT test in unfamiliar terrain or get lost (spend watch to re-test).
+- When the player announces travel, run the full procedure: track watches used, roll for encounters per watch, describe terrain transitions. Use !Weather at dawn.
+- Dungeon: 1 Turn = ~10 min. Every 2 Turns roll d6; on 1, wandering monster. Torches = 6 Turns, lanterns = 12 Turns.
+
+=== HEALING & REST ===
+- Overnight rest (2 watches sleep + 1 ration + pilgrim's case): heal STR HP (min 1). No case = heal 1. No food = no healing.
+- Full rest (inn, stronghold): restore all HP.
+- No sleep 1 day = DIS on all tests. No food 2 days / no water 1 day = no rest benefit, lose d6 HP/day.
+
+=== INVENTORY & DEPLETION ===
+- Carry STR + 8 slots (hard cap 15). Over limit = STR/AGI tests DC +2, half movement.
+- Fragile items have 3 depletion dots. All filled = item gone.
+- Ammo depletes at end of any combat you fired in. Weapon depletes on attack fumble. Armor depletes on defense fumble or enemy crit.
+
 === TONE ===
 Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories matter. Beauty exists but it is fragile and often hiding something worse.`;
 
   const DEFAULT_AGENT_CONFIG = {
     instructions: DEFAULT_AGENT_INSTRUCTIONS,
-    useRules: true,
     usePlaystate: true,
     useLorebook: true,
     useMtm: true,
@@ -3704,12 +3741,6 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
     if (agentConfig.instructions) {
       systemParts.push(agentConfig.instructions);
       devLogDetail(`  [${injectionOrder++}] Agent Instructions`, agentConfig.instructions, 'info');
-    }
-
-    // Rules
-    if (agentConfig.useRules && systemInstructions.trim()) {
-      systemParts.push('[GAME RULES — Apply these mechanics when resolving actions]\n' + systemInstructions.trim());
-      devLogDetail(`  [${injectionOrder++}] Game Rules`, systemInstructions.trim(), 'info');
     }
 
     // Playstate
@@ -3878,8 +3909,6 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
     if (!panel) return;
     const instrEl = panel.querySelector('#agentInstructions');
     if (instrEl) agentConfig.instructions = instrEl.value;
-    const rulesEl = panel.querySelector('#agentUseRules');
-    if (rulesEl) agentConfig.useRules = rulesEl.checked;
     const psEl = panel.querySelector('#agentUsePlaystate');
     if (psEl) agentConfig.usePlaystate = psEl.checked;
     const loreEl = panel.querySelector('#agentUseLorebook');
@@ -3906,7 +3935,6 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
         </div>
         <textarea id="agentInstructions" class="pipe-instructions" placeholder="Agent system prompt..." onchange="agentSave()" style="min-height:200px;">${escapeHtml(agentConfig.instructions || '')}</textarea>
         <div class="pipeline-toggles">
-          <label class="pipeline-toggle-item"><input type="checkbox" id="agentUseRules" ${agentConfig.useRules !== false ? 'checked' : ''} onchange="agentSave()"> Rules</label>
           <label class="pipeline-toggle-item"><input type="checkbox" id="agentUsePlaystate" ${agentConfig.usePlaystate !== false ? 'checked' : ''} onchange="agentSave()"> Playstate</label>
           <label class="pipeline-toggle-item"><input type="checkbox" id="agentUseLorebook" ${agentConfig.useLorebook !== false ? 'checked' : ''} onchange="agentSave()"> Lorebook</label>
           <label class="pipeline-toggle-item"><input type="checkbox" id="agentUseMtm" ${agentConfig.useMtm !== false ? 'checked' : ''} onchange="agentSave()"> Mid-term Memory</label>
