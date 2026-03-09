@@ -1293,12 +1293,6 @@
         </div>
         <hr class="settings-divider">
         <div>
-          <div class="settings-label">System Instructions</div>
-          <textarea id="systemInstructionsInput" style="width:100%; min-height:100px; background:var(--gray-darkest); border:1px solid var(--gray-light); border-radius:6px; color:var(--gray-bright); font-size:0.82rem; font-family:inherit; padding:8px; resize:vertical;" placeholder="You are a dungeon master running a D&D campaign..." onchange="saveSystemInstructions()"></textarea>
-          <div class="settings-hint">Custom instructions sent to the AI with every message. Use this to set tone, rules, persona, or campaign context.</div>
-        </div>
-        <hr class="settings-divider">
-        <div>
           <div class="settings-label">Data Management</div>
           <button onclick="tableLinkFile()" id="btnSettingsLinkTables">Link tables.json (Auto-Save)</button>
           <div class="settings-hint">Link your local tables.json to enable automatic syncing when you create or edit tables.</div>
@@ -1690,58 +1684,6 @@
   let editingTableId = null;
   let collapsedTableGroups = loadJSON('collapsedTableGroups', {});
   let tableGlobalEnabled = loadJSON('tableGlobalEnabled', true);
-  const DEFAULT_SYSTEM_INSTRUCTIONS = `You are a Referee (Game Master) running a dark, low-fantasy RPG called Iron & Omens. You run the world honestly and without mercy, but you are fair.
-
-=== CORE MECHANICS ===
-- Tests: d20 + ability vs DC. Default DC 12. Easy 9, Hard 15, Near Impossible 18.
-- ADV: roll extra die, drop lowest. DIS: roll extra die, drop highest. Multiple sources cancel 1-for-1.
-- Abilities: STR (melee, lifting, slots), AGI (defense, ranged, stealth), INT (perception, navigation, magic), PRE (social, omens, reactions).
-- Omens (= PRE, min 1, refresh each session): spend after a roll to deal max damage, reroll any die, reduce incoming dmg by d6, neutralize a crit/fumble, or lower DC by 4.
-
-=== COMBAT ===
-- The Referee rolls ALL dice using the roll_dice tool. The player never rolls.
-- Initiative: Roll 1d20+AGI for each combatant to determine order.
-- Melee: d20+STR vs DC 12. Damage = d6+STR. Ranged: d20+AGI vs DC 12. Damage = d6+AGI.
-- Defense: d20+AGI vs DC 12. Fail = take d6 + enemy HD, minus DR.
-- Crit 20 attack: double damage, mark armor depletion. Fumble 1 attack: mark weapon depletion.
-- Crit 20 defense: free counter-attack. Fumble 1 defense: double damage, mark armor depletion.
-- Morale: Referee rolls 2d6 when leader dies, half down, or lone foe < 1/3 HP. Below creature's Morale = flee/surrender.
-- 0 HP = Broken. Roll on !Broken table.
-
-=== MONSTERS ===
-- HD-based: HP = HD x d6. Damage = d6+HD. Tests = d20+HD. DR = HD/3 (round down). Morale = 6 + HD/2 (round down).
-
-=== MAGIC ===
-- Cast: test INT vs DC 10 + spell tier. Success = spell works + mark grimoire depletion. Fail = fizzle, d6 damage, dazed (no casting until rest). Nat 1 = Arcane Catastrophe.
-- Requires both hands free, armor no heavier than light.
-
-=== HEXCRAWL & TIME ===
-- Hex = 6 miles. On foot: 1 hex/watch. Mounted: 2 hex/watch. Max 3 travel watches/day (4th = STR test or DIS on everything).
-- Encounters: roll d6 per travel watch. Normal terrain: encounter on 1. Difficult: 1-2. Arduous: 1-3.
-- Navigation: INT test in unfamiliar terrain or get lost (spend watch to re-test).
-- When the player announces travel, run the full procedure: track watches used, roll for encounters per watch, describe terrain transitions. Use !Weather at dawn.
-- Dungeon: 1 Turn = ~10 min. Every 2 Turns roll d6; on 1, wandering monster. Torches = 6 Turns, lanterns = 12 Turns.
-
-=== HEALING & REST ===
-- Overnight rest (2 watches sleep + 1 ration + pilgrim's case): heal STR HP (min 1). No case = heal 1. No food = no healing.
-- Full rest (inn, stronghold): restore all HP.
-- No sleep 1 day = DIS on all tests. No food 2 days / no water 1 day = no rest benefit, lose d6 HP/day.
-
-=== INVENTORY & DEPLETION ===
-- Carry STR + 8 slots (hard cap 15). Over limit = STR/AGI tests DC +2, half movement.
-- Fragile items have 3 depletion dots. All filled = item gone.
-- Ammo depletes at end of any combat you fired in. Weapon depletes on attack fumble. Armor depletes on defense fumble or enemy crit.
-
-=== NARRATIVE PRINCIPLES ===
-- Narrate in second person. Be vivid but concise.
-- Respect the Playstate absolutely. Never give items, gold, HP, or Omens the player didn't earn.
-- When outcome is uncertain, roll using the roll_dice tool and narrate the result.
-- NPCs have motivations. Track their location by hex. They act independently of the player.
-- Combat is dangerous. Low HP should feel desperate.
-- Do not break character. Do not explain mechanics unless asked.
-- End each response with a moment that invites the player to act.
-- When the player enters a new hex, briefly describe the terrain and any visible landmarks or points of interest.`;
-  let systemInstructions = loadJSON('systemInstructions', DEFAULT_SYSTEM_INSTRUCTIONS);
 
   // ─── Model Selection ───
   const AVAILABLE_MODELS = [
@@ -2170,137 +2112,6 @@
   }
 
   // ─── Gemini API Call ───
-  async function callGemini(messages, opts = {}) {
-    const { useLorebook = true, useMtm = true, useChatHistory = true, useRules = true, usePlaystate = true, extraSystem = '', customMemoryDepth = 0 } = opts;
-    const effectiveMemory = customMemoryDepth > 0 ? customMemoryDepth : memoryDepth;
-
-    // Build the contents array
-    let contents;
-    if (useChatHistory) {
-      const validMsgs = messages.filter(m => m.role === 'user' || m.role === 'assistant');
-      const windowedMsgs = validMsgs.slice(-effectiveMemory);
-      contents = windowedMsgs.map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.text }]
-      }));
-    } else {
-      // No chat history — only send the latest user message
-      const lastUser = [...messages].reverse().find(m => m.role === 'user');
-      contents = lastUser
-        ? [{ role: 'user', parts: [{ text: lastUser.text }] }]
-        : [{ role: 'user', parts: [{ text: '' }] }];
-    }
-
-    // Gather context based on toggles
-    // Order: Pass Instructions FIRST (identity/role), then reference material
-    const systemParts = [];
-    let injectionOrder = 1;
-    devLog(`── Building System Context ──`, 'header');
-
-    if (extraSystem) {
-      systemParts.push(extraSystem);
-      devLogDetail(`  [${injectionOrder++}] Pipeline Pass Instructions`, extraSystem, 'info');
-    }
-
-    if (useRules && systemInstructions.trim()) {
-      const part = systemInstructions.trim();
-      systemParts.push(part);
-      devLogDetail(`  [${injectionOrder++}] System Instructions (Rules)`, part, 'info');
-    } else if (!useRules) {
-      devLog(`  [skip] System Instructions — disabled for this call`, 'warn');
-    } else {
-      devLog(`  [skip] System Instructions — empty`, 'warn');
-    }
-
-    if (usePlaystate && playstateEnabled) {
-      const currentPlaystate = getPlaystateForChat();
-      if (currentPlaystate && currentPlaystate.state) {
-        const part = '[Current Playstate — This is the current state of the game/character. Use this to inform your response.]\n' + currentPlaystate.state;
-        systemParts.push(part);
-        devLogDetail(`  [${injectionOrder++}] Playstate`, currentPlaystate.state, 'info');
-      } else {
-        devLog(`  [skip] Playstate — no state data for this chat`, 'warn');
-      }
-    } else if (!usePlaystate) {
-      devLog(`  [skip] Playstate — disabled for this call`, 'warn');
-    } else {
-      devLog(`  [skip] Playstate — disabled globally`, 'warn');
-    }
-
-    if (useMtm) {
-      const mtmSummary = getMtmSummaryForChat();
-      if (mtmSummary) {
-        const part = '[Mid-term Memory — summary of earlier events that have left the immediate conversation window. Use this to maintain continuity but do not mention receiving it.]\n' + mtmSummary;
-        systemParts.push(part);
-        devLogDetail(`  [${injectionOrder++}] Mid-term Memory`, mtmSummary, 'info');
-      } else {
-        devLog(`  [skip] Mid-term Memory — no summary yet`, 'warn');
-      }
-    } else {
-      devLog(`  [skip] Mid-term Memory — disabled for this call`, 'warn');
-    }
-
-    if (useLorebook) {
-      const loreContext = gatherLoreContext(messages);
-      if (loreContext) {
-        systemParts.push(loreContext);
-        devLogDetail(`  [${injectionOrder++}] Lorebook Context`, loreContext, 'info');
-      } else {
-        devLog(`  [skip] Lorebook — no entries matched`, 'warn');
-      }
-    } else {
-      devLog(`  [skip] Lorebook — disabled for this call`, 'warn');
-    }
-
-    const body = { contents };
-    if (systemParts.length > 0) {
-      const fullSystemText = systemParts.join('\n\n');
-      body.systemInstruction = { parts: [{ text: fullSystemText }] };
-      devLog(`── System Context Complete: ${injectionOrder - 1} blocks, ${fullSystemText.length.toLocaleString()} chars total ──`, 'header');
-      devLogDetail(`  Full systemInstruction payload`, fullSystemText, 'header');
-    }
-
-    // Add thinking config
-    body.generationConfig = { thinkingConfig: { thinkingLevel: thinkingLevel } };
-    devLog(`  Thinking: level=${thinkingLevel}`, 'info');
-
-    devLog(`API Request: model=${selectedModel}, ${contents.length} msgs (mem ${effectiveMemory}${customMemoryDepth > 0 ? ' [override]' : ''})`, 'info');
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
-
-    devLogDetail(`  Full API request body`, JSON.stringify(body, null, 2), 'info');
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-
-    if (!res.ok) {
-      const errBody = await res.text();
-      devLogDetail(`  API Error Response`, errBody, 'error');
-      let detail = '';
-      try { detail = JSON.parse(errBody).error.message; } catch { detail = errBody; }
-      throw new Error(`API ${res.status}: ${detail}`);
-    }
-
-    const data = await res.json();
-    devLogDetail(`  Full API response`, JSON.stringify(data, null, 2), 'success');
-    const candidate = data.candidates && data.candidates[0];
-    if (!candidate || !candidate.content || !candidate.content.parts) {
-      throw new Error('No response from model.');
-    }
-
-    // Extract text parts only (skip thinking parts if present)
-    const textParts = candidate.content.parts.filter(p => p.text !== undefined && !p.thought);
-    const thoughtParts = candidate.content.parts.filter(p => p.thought);
-    if (thoughtParts.length > 0) {
-      devLogDetail(`  Model thinking`, thoughtParts.map(p => p.text).join(''), 'info');
-    }
-
-    devLog(`API Response: Success (${textParts.reduce((a,p) => a + (p.text||'').length, 0)} chars)`, 'success');
-    return textParts.map(p => p.text).join('');
-  }
 
   // ─── Lorebook ───
   let lorebook = loadJSON('lorebook', []);
@@ -3258,11 +3069,6 @@ If there is no new lore to extract or update, just return an empty array [] insi
     }
   }
 
-  function saveSystemInstructions() {
-    systemInstructions = document.getElementById('systemInstructionsInput').value;
-    saveJSON('systemInstructions', systemInstructions);
-  }
-
   function tableNewEntry() {
     const entry = {
       id: 'tbl_' + Date.now(),
@@ -4037,7 +3843,6 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
   document.getElementById('loreGlobalToggle').checked = loreGlobalEnabled;
   document.getElementById('loreAutoExtractToggle').checked = loreAutoExtractEnabled;
   document.getElementById('tableGlobalToggle').checked = tableGlobalEnabled;
-  document.getElementById('systemInstructionsInput').value = systemInstructions;
   renderLorebook();
   renderPlaystate();
 
