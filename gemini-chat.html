@@ -1275,14 +1275,14 @@
           <div class="settings-hint">Choose which Gemini model to use.</div>
         </div>
         <div id="thinkingConfig" style="margin-top:8px;">
-          <div class="settings-label">Chat Thinking Level</div>
+          <div class="settings-label">Thinking Level</div>
           <select id="thinkingLevelSelect" onchange="saveThinkingConfig()" style="width:100%; padding:8px; background:var(--gray-darkest); border:1px solid var(--gray-light); border-radius:6px; color:var(--gray-bright); font-size:0.85rem;">
             <option value="MINIMAL">Minimal (fastest, cheapest)</option>
             <option value="LOW">Low</option>
             <option value="MEDIUM">Medium</option>
             <option value="HIGH">High (best reasoning, most expensive)</option>
           </select>
-          <div class="settings-hint">Thinking level for non-agent chat calls (e.g. playstate, MTM). The Agent has its own thinking level below.</div>
+          <div class="settings-hint">Thinking level for all API calls — chat, agent, playstate, and memory updates.</div>
         </div>
         <hr class="settings-divider">
         <div>
@@ -3687,8 +3687,7 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
     useMtm: true,
     useChatHistory: true,
     memoryOverride: 0,
-    maxToolCalls: 15,
-    thinkingLevel: 'MEDIUM'
+    maxToolCalls: 15
   };
 
   let agentConfig = loadJSON('agentConfig', DEFAULT_AGENT_CONFIG);
@@ -3747,8 +3746,7 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
 
   /** Main agent loop — calls Gemini with tools, loops on function calls until final text */
   async function runAgent(messages) {
-    const agentThinking = agentConfig.thinkingLevel || 'MEDIUM';
-    devLog(`Agent thinking level: ${agentThinking}`, 'info');
+    devLog(`Agent thinking level: ${thinkingLevel}`, 'info');
 
     const systemPrompt = buildAgentSystemPrompt(messages);
     const effectiveMemory = agentConfig.memoryOverride > 0 ? agentConfig.memoryOverride : memoryDepth;
@@ -3792,9 +3790,9 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
       // Add tools
       body.tools = [{ functionDeclarations: AGENT_TOOL_DECLARATIONS }];
 
-      // Set thinking level from agent config preset
-      body.generationConfig = { thinkingConfig: { thinkingLevel: agentThinking } };
-      devLog(`  Thinking: level=${agentThinking}`, 'info');
+      // Set thinking level from global settings
+      body.generationConfig = { thinkingConfig: { thinkingLevel: thinkingLevel } };
+      devLog(`  Thinking: level=${thinkingLevel}`, 'info');
 
       devLog(`  API: model=${selectedModel}, ${contents.length} content blocks`, 'info');
       devLogDetail(`  Request body`, JSON.stringify(body, null, 2), 'info');
@@ -3894,8 +3892,6 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
     if (memEl) agentConfig.memoryOverride = parseInt(memEl.value) || 0;
     const maxEl = panel.querySelector('#agentMaxTools');
     if (maxEl) agentConfig.maxToolCalls = Math.min(parseInt(maxEl.value) || 15, 25);
-    const thinkEl = panel.querySelector('#agentThinkingLevel');
-    if (thinkEl) agentConfig.thinkingLevel = thinkEl.value;
     agentPersist();
   }
 
@@ -3917,12 +3913,6 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
           <label class="pipeline-toggle-item"><input type="checkbox" id="agentUseHistory" ${agentConfig.useChatHistory !== false ? 'checked' : ''} onchange="agentSave()"> Chat History</label>
           <label class="pipeline-toggle-item" title="Override memory depth (0 = use global setting)">Mem: <input type="number" id="agentMemoryOverride" min="0" max="200" value="${agentConfig.memoryOverride || 0}" onchange="agentSave()" style="width:48px; background:var(--gray-dark); color:var(--white); border:1px solid var(--gray-mid); border-radius:3px; padding:2px 4px; font-size:0.75rem;"></label>
           <label class="pipeline-toggle-item" title="Maximum tool calls per message (safety limit)">Max tools: <input type="number" id="agentMaxTools" min="1" max="25" value="${agentConfig.maxToolCalls || 15}" onchange="agentSave()" style="width:48px; background:var(--gray-dark); color:var(--white); border:1px solid var(--gray-mid); border-radius:3px; padding:2px 4px; font-size:0.75rem;"></label>
-          <label class="pipeline-toggle-item" title="Thinking level for the agent's API calls">Thinking: <select id="agentThinkingLevel" onchange="agentSave()" style="background:var(--gray-dark); color:var(--white); border:1px solid var(--gray-mid); border-radius:3px; padding:2px 4px; font-size:0.75rem;">
-            <option value="MINIMAL" ${agentConfig.thinkingLevel === 'MINIMAL' ? 'selected' : ''}>Minimal</option>
-            <option value="LOW" ${agentConfig.thinkingLevel === 'LOW' ? 'selected' : ''}>Low</option>
-            <option value="MEDIUM" ${(agentConfig.thinkingLevel || 'MEDIUM') === 'MEDIUM' ? 'selected' : ''}>Medium</option>
-            <option value="HIGH" ${agentConfig.thinkingLevel === 'HIGH' ? 'selected' : ''}>High</option>
-          </select></label>
         </div>
       </div>
       <div style="margin-top:8px; padding:8px; background:var(--gray-dark); border:1px solid var(--gray-mid); border-radius:5px; font-size:0.75rem; color:var(--gray-text);">
