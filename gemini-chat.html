@@ -1982,9 +1982,13 @@
       devLog(`════ Agent Processing ════`, 'header');
 
       // Run the agent loop (tool-calling loop)
-      let replyText = await runAgent(chat.messages);
+      const agentResult = await runAgent(chat.messages);
 
-      chat.messages.push({ role: 'assistant', text: replyText });
+      const msg = { role: 'assistant', text: agentResult.text };
+      if (agentResult.toolLog.length > 0) {
+        msg.toolLog = agentResult.toolLog;
+      }
+      chat.messages.push(msg);
       devLog(`════ Agent Flow Complete ════`, 'success');
     } catch (err) {
       chat.messages.push({ role: 'error', text: 'Error: ' + err.message });
@@ -2428,7 +2432,14 @@ Weather: [unrolled]
 
     // Use last 6 messages — captures multi-turn combat, negotiations, etc.
     const recentMsgs = validMsgs.slice(-6);
-    const transcript = recentMsgs.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`).join('\n\n');
+    const transcript = recentMsgs.map(m => {
+      let entry = `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`;
+      if (m.toolLog && m.toolLog.length > 0) {
+        const toolSummary = m.toolLog.map(t => `  [${t.tool}] ${t.result}`).join('\n');
+        entry += `\n[Mechanical results from this turn]\n${toolSummary}`;
+      }
+      return entry;
+    }).join('\n\n');
 
     // Gather supporting context so the updater knows WHO and WHAT
     const contextParts = [];
@@ -2722,10 +2733,15 @@ Updated State:`;
       devLog(`── MTM Summarization ──`, 'header');
       devLog(`MTM: Summarizing ${msgsToSummarize.length} messages (indices ${exitStart}-${exitEnd})...`, 'info');
 
-      // Build the summarization prompt
-      const transcript = msgsToSummarize.map(m =>
-        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`
-      ).join('\n\n');
+      // Build the summarization prompt (include tool results so mechanical outcomes are captured)
+      const transcript = msgsToSummarize.map(m => {
+        let entry = `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`;
+        if (m.toolLog && m.toolLog.length > 0) {
+          const toolSummary = m.toolLog.map(t => `  [${t.tool}] ${t.result}`).join('\n');
+          entry += `\n[Mechanical results from this turn]\n${toolSummary}`;
+        }
+        return entry;
+      }).join('\n\n');
 
       const previousSummary = data.summary
         ? `Here is your previous summary of earlier events:\n---\n${data.summary}\n---\n\n`
@@ -3606,6 +3622,7 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
     const maxIterations = Math.min(agentConfig.maxToolCalls || 15, HARD_ITERATION_LIMIT);
     const agentStartTime = Date.now();
     let iteration = 0;
+    const toolLog = []; // Collect all tool calls and their results
 
     while (iteration < maxIterations) {
       iteration++;
@@ -3666,14 +3683,14 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
         devLogDetail(`  Model thinking`, thoughtParts.map(p => p.text).join(''), 'info');
       }
 
-      // If no function calls, we're done — return the text
+      // If no function calls, we're done — return text + tool log
       if (functionCalls.length === 0) {
         const finalText = textParts.map(p => p.text).join('');
         devLog(`  Agent complete after ${iteration} iteration(s), ${finalText.length} chars`, 'success');
 
         // Process any !Commands that might be in the output
         const processed = processCommands(finalText, 'Agent Output');
-        return processed;
+        return { text: processed, toolLog };
       }
 
       // Execute tool calls and continue the loop
@@ -3686,6 +3703,7 @@ Dark, gritty, low-fantasy. The world is hostile and uncaring. Small victories ma
       const responseParts = [];
       for (const fc of functionCalls) {
         const result = executeToolCall(fc.functionCall);
+        toolLog.push({ tool: fc.functionCall.name, args: fc.functionCall.args, result });
         responseParts.push({
           functionResponse: {
             name: fc.functionCall.name,
