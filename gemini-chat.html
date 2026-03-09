@@ -615,47 +615,40 @@
       border-left: 3px solid var(--red-accent);
     }
 
-    /* Mechanics hover panel */
-    .mechanics-indicator {
-      position: absolute;
-      top: 8px;
-      right: -28px;
-      width: 20px;
-      height: 20px;
-      background: var(--gray-dark);
-      border: 1px solid var(--red-dark);
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      opacity: 0.5;
-      transition: opacity 0.2s;
+    /* Mechanics slide-out panel — fixed overlay that appears on message hover */
+    .message.has-mechanics {
+      cursor: default;
     }
-    .mechanics-indicator svg { width: 14px; height: 14px; fill: var(--red-accent); }
-    .message:hover .mechanics-indicator { opacity: 1; }
-    .mechanics-panel {
-      display: none;
-      position: absolute;
+    #mechanicsPanel {
+      position: fixed;
       top: 0;
-      left: calc(100% + 8px);
-      width: 280px;
+      left: 0;
+      width: 260px;
       background: var(--gray-darkest);
       border: 1px solid var(--red-dark);
-      border-radius: 8px;
-      padding: 10px 12px;
+      border-left: 3px solid var(--red-accent);
+      border-radius: 0 8px 8px 0;
       font-size: 0.8rem;
       line-height: 1.5;
       color: var(--gray-text);
-      z-index: 10;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      max-height: 400px;
+      z-index: 100;
+      box-shadow: 4px 2px 16px rgba(0,0,0,0.6);
+      max-height: 60vh;
       overflow-y: auto;
+      padding: 10px 12px;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateX(-8px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
     }
-    .mechanics-panel.visible { display: block; }
-    .mechanics-panel h4 {
+    #mechanicsPanel.visible {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+    #mechanicsPanel h4 {
       color: var(--red-accent);
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin: 0 0 6px 0;
@@ -1163,6 +1156,9 @@
   </style>
 </head>
 <body>
+
+  <!-- Shared mechanics hover panel -->
+  <div id="mechanicsPanel"></div>
 
   <!-- Tab Bar (icon strip) -->
   <div class="tab-bar">
@@ -1995,44 +1991,46 @@
       actionsDiv.innerHTML = actionsHtml;
       div.appendChild(actionsDiv);
 
-      // Mechanics panel — shows tool calls on hover for assistant messages
+      // Mechanics hover panel — shows tool calls when hovering assistant messages
       if (msg.role === 'assistant' && msg.toolLog && msg.toolLog.length > 0) {
-        const indicator = document.createElement('div');
-        indicator.className = 'mechanics-indicator';
-        indicator.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>';
-        indicator.title = 'View mechanics';
+        div.classList.add('has-mechanics');
+        div._toolLog = msg.toolLog;
 
-        const panel = document.createElement('div');
-        panel.className = 'mechanics-panel';
-        panel.innerHTML = '<h4>Mechanics</h4>' + msg.toolLog.map(t => {
-          const argsStr = t.args ? Object.entries(t.args).map(([k,v]) => `${k}: ${v}`).join(', ') : '';
-          return `<div class="mechanics-entry">
-            <div class="mechanics-tool-name">${t.tool}</div>
-            ${argsStr ? `<div class="mechanics-args">${argsStr}</div>` : ''}
-            <div class="mechanics-result">${t.result}</div>
-          </div>`;
-        }).join('');
-
-        indicator.addEventListener('click', (e) => {
-          e.stopPropagation();
-          panel.classList.toggle('visible');
+        div.addEventListener('mouseenter', function() {
+          const panel = document.getElementById('mechanicsPanel');
+          const rect = this.getBoundingClientRect();
+          panel.innerHTML = '<h4>Mechanics</h4>' + this._toolLog.map(t => {
+            const argsStr = t.args ? Object.entries(t.args).map(([k,v]) => `${k}: ${v}`).join(', ') : '';
+            return `<div class="mechanics-entry">
+              <div class="mechanics-tool-name">${t.tool}</div>
+              ${argsStr ? `<div class="mechanics-args">${argsStr}</div>` : ''}
+              <div class="mechanics-result">${t.result}</div>
+            </div>`;
+          }).join('');
+          // Position to the right of the message
+          panel.style.top = rect.top + 'px';
+          panel.style.left = (rect.right + 8) + 'px';
+          // Clamp to viewport bottom
+          panel.classList.add('visible');
+          requestAnimationFrame(() => {
+            const panelRect = panel.getBoundingClientRect();
+            if (panelRect.bottom > window.innerHeight) {
+              panel.style.top = Math.max(0, window.innerHeight - panelRect.height - 8) + 'px';
+            }
+          });
         });
-
-        div.appendChild(indicator);
-        div.appendChild(panel);
+        div.addEventListener('mouseleave', function(e) {
+          const panel = document.getElementById('mechanicsPanel');
+          // Don't close if moving into the panel itself
+          if (e.relatedTarget && (e.relatedTarget === panel || panel.contains(e.relatedTarget))) return;
+          panel.classList.remove('visible');
+        });
       }
 
       container.appendChild(div);
     }
 
     container.scrollTop = container.scrollHeight;
-
-    // Close mechanics panels when clicking outside
-    container.addEventListener('click', (e) => {
-      if (!e.target.closest('.mechanics-indicator') && !e.target.closest('.mechanics-panel')) {
-        container.querySelectorAll('.mechanics-panel.visible').forEach(p => p.classList.remove('visible'));
-      }
-    });
   }
 
   // ─── Send Message ───
@@ -3890,6 +3888,13 @@ PROSE STYLE
   document.getElementById('tableGlobalToggle').checked = tableGlobalEnabled;
   renderLorebook();
   renderPlaystate();
+
+  // Mechanics panel — close when mouse leaves the panel itself
+  document.getElementById('mechanicsPanel').addEventListener('mouseleave', function(e) {
+    // Don't close if moving back to a has-mechanics message
+    if (e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.has-mechanics')) return;
+    this.classList.remove('visible');
+  });
 
   // Initialize table file handle on load
   initTableFileHandle();
